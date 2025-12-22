@@ -12,10 +12,6 @@ A Python-based tool to extract historical foreign exchange rates using the Twelv
 
 1.  **Get an API Key**: Sign up at [Twelve Data](https://twelvedata.com/) to get your free API key.
 2.  **Install Python**: Ensure Python 3 is installed on your system.
-3.  **Install Dependencies**:
-    ```bash
-    pip install -r code/requirements.txt
-    ```
 
 ## Usage
 
