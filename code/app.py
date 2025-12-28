@@ -224,25 +224,42 @@ else:
             audit_disabled = uploaded_file is None
             
             if st.button("Generate Audit", type="primary", disabled=audit_disabled, key="audit_run"):
-                # Clear previous results
+                # Clear previous results and mark as processing
                 if 'audit_result' in st.session_state:
                     del st.session_state['audit_result']
-                
+                st.session_state['audit_processing'] = True
+                st.session_state['audit_file_data'] = uploaded_file
+                st.session_state['audit_params'] = {
+                    'date_fmt': date_format,
+                    'threshold': threshold,
+                    'testing_mode': testing_mode
+                }
+                st.rerun()
+
+        # --- RIGHT PANE (Audit Results / Progress) ---
+        with col_right:
+            st.markdown("### 📋 Audit Results")
+            
+            # Check if we're processing
+            if st.session_state.get('audit_processing', False):
                 # Clear rate cache for fresh start
                 clear_rate_cache()
                 
-                # Create progress containers
+                # Create progress containers IN THE RIGHT PANE
                 progress_bar = st.progress(0, text="Initializing...")
                 status_text = st.empty()
                 
                 try:
+                    params = st.session_state['audit_params']
+                    file_data = st.session_state['audit_file_data']
+                    
                     # Call the generator
                     gen = process_audit_file(
-                        file=uploaded_file,
-                        date_fmt=date_format,
-                        threshold=threshold,
+                        file=file_data,
+                        date_fmt=params['date_fmt'],
+                        threshold=params['threshold'],
                         api_key=api_key,
-                        testing_mode=testing_mode
+                        testing_mode=params['testing_mode']
                     )
                     
                     # Consume generator for progress updates
@@ -274,22 +291,22 @@ else:
                     except StopIteration as e:
                         final_result = e.value
                     
-                    # Store result
+                    # Store result and clear processing flag
                     if final_result:
                         st.session_state['audit_result'] = final_result
+                        st.session_state['audit_processing'] = False
                         progress_bar.progress(1.0, text="Complete!")
+                        time.sleep(0.5)  # Brief pause to show completion
                         st.rerun()
                     else:
+                        st.session_state['audit_processing'] = False
                         st.error("Audit completed but no results returned.")
                         
                 except Exception as e:
+                    st.session_state['audit_processing'] = False
                     st.error(f"Audit failed: {e}")
-
-        # --- RIGHT PANE (Audit Results) ---
-        with col_right:
-            st.markdown("### 📋 Audit Results")
             
-            if 'audit_result' in st.session_state:
+            elif 'audit_result' in st.session_state:
                 df, summary = st.session_state['audit_result']
                 
                 # Summary Metrics
@@ -346,3 +363,4 @@ else:
                         <p>Upload a file and click 'Generate Audit' to validate rates.</p>
                     </div>
                 ''', unsafe_allow_html=True)
+

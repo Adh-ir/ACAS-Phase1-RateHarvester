@@ -353,3 +353,24 @@ button[kind="primary"]:hover {
   padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.5);
 }
+
+/* File Uploader Styling - Smaller Text */
+[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] {
+  padding: 15px !important;
+}
+
+/* "Drag and drop file here" text - smaller (~8pt equivalent) */
+[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"]>div>span {
+  font-size: 0.65rem !important;
+}
+
+/* "Browse files" button text - smaller (~14pt equivalent) */
+[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] button {
+  font-size: 0.85rem !important;
+  padding: 6px 16px !important;
+}
+
+/* File size limit text */
+[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] small {
+  font-size: 0.6rem !important;
+}
