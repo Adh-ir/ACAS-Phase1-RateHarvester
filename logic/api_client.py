@@ -1,3 +1,9 @@
+"""
+Twelve Data API Client
+
+Client for interacting with the Twelve Data API with rate limiting.
+"""
+
 import time
 import requests
 import logging
@@ -6,6 +12,7 @@ from typing import Optional, Dict, Any, List
 
 # Configure logger
 logger = logging.getLogger(__name__)
+
 
 class TwelveDataClient:
     """
@@ -36,13 +43,11 @@ class TwelveDataClient:
         if len(self._request_timestamps) >= self.RATE_LIMIT_REQUESTS:
             # Calculate sleep time: Time until the oldest request expires from the window
             oldest_timestamp = self._request_timestamps[0]
-            sleep_time = (oldest_timestamp + self.RATE_LIMIT_WINDOW) - now + 0.5 # Add buffering
+            sleep_time = (oldest_timestamp + self.RATE_LIMIT_WINDOW) - now + 0.5  # Add buffering
             
             if sleep_time > 0:
                 logger.warning(f"Rate limit reached. Sleeping for {sleep_time:.2f} seconds.")
                 time.sleep(sleep_time)
-                # After sleeping, we technically might have space, but let's re-check or just proceed.
-                # Recursive strictness, but let's just append new time after sleep.
         
         self._request_timestamps.append(time.time())
 
@@ -121,7 +126,7 @@ class TwelveDataClient:
             
             if response.status_code == 429:
                 if retry_count < 3:
-                     # Exponential backoff: 60s, 120s, etc.
+                    # Exponential backoff: 60s, 120s, etc.
                     wait_time = 60 * (retry_count + 1)
                     logger.warning(f"HTTP 429 received from API. Retrying in {wait_time}s...")
                     time.sleep(wait_time)
@@ -134,17 +139,17 @@ class TwelveDataClient:
             
             # Application-level error check
             if data.get('code') == 429:
-                 if retry_count < 3:
+                if retry_count < 3:
                     wait_time = 60 * (retry_count + 1)
                     logger.warning(f"API Code 429 received. Retrying in {wait_time}s...")
                     time.sleep(wait_time)
                     return self._make_request(url, params, retry_count + 1)
-                 else:
+                else:
                     return None
             
             if data.get('status') == 'error':
-                 logger.error(f"API Error: {data.get('message')}")
-                 return None
+                logger.error(f"API Error: {data.get('message')}")
+                return None
 
             return data
 

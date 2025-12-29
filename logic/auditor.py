@@ -9,9 +9,9 @@ CRITICAL: Designed to survive strict API Rate Limits (Twelve Data Free Tier = ~8
 
 import time
 import random
-import re
 import logging
 import pandas as pd
+import requests
 from typing import Generator, Dict, Any, Tuple, Optional
 from datetime import datetime
 
@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 
 # --- Column Name Mappings (Flexible Schema Support) ---
-# Maps various possible column names to our internal standard names
 COLUMN_MAPPINGS = {
     'date': ['Date', 'date', 'DATE', 'Transaction Date', 'Trade Date'],
     'base': ['Base', 'base', 'BASE', 'Base Currency', 'base_currency', 'From', 'from'],
@@ -33,15 +32,6 @@ COLUMN_MAPPINGS = {
 def validate_schema(df: pd.DataFrame) -> Tuple[bool, Dict[str, str], str]:
     """
     Validates the DataFrame schema and maps columns to standard names.
-    
-    Args:
-        df: The input DataFrame to validate.
-        
-    Returns:
-        Tuple of (is_valid, column_mapping, error_message)
-        - is_valid: True if all required columns are found
-        - column_mapping: Dict mapping internal names to actual column names
-        - error_message: Empty string if valid, otherwise describes missing columns
     """
     found_mapping = {}
     missing_fields = []
@@ -66,8 +56,6 @@ def validate_schema(df: pd.DataFrame) -> Tuple[bool, Dict[str, str], str]:
 
 
 # --- Rate Cache (Simple In-Memory) ---
-# Key: (date_str, base, source) -> Value: rate
-# This prevents redundant API calls for the same date/pair combination.
 _rate_cache: Dict[Tuple[str, str, str], float] = {}
 
 
@@ -86,17 +74,14 @@ def _set_cached_rate(date_str: str, base: str, source: str, rate: float):
 def _fetch_rate_from_api(api_key: str, base: str, source: str, date_str: str) -> Optional[float]:
     """
     Fetches a single historical rate from Twelve Data API.
-    Uses the time_series endpoint with outputsize=1 for efficiency.
     """
-    import requests
-    
     url = "https://api.twelvedata.com/time_series"
     params = {
         "apikey": api_key,
         "symbol": f"{base}/{source}",
         "interval": "1day",
         "start_date": date_str,
-        "outputsize": 1  # Get closest candle
+        "outputsize": 1
     }
     
     try:
@@ -121,7 +106,6 @@ def _fetch_rate_from_api(api_key: str, base: str, source: str, date_str: str) ->
 def _generate_mock_rate(base: str, source: str, user_rate: float) -> float:
     """
     Generates a mock rate for testing mode.
-    Returns a rate with a small random variance from user_rate to simulate real API data.
     """
     # Variance between -5% and +5%
     variance_pct = random.uniform(-0.05, 0.05)
@@ -132,9 +116,7 @@ def _generate_mock_rate(base: str, source: str, user_rate: float) -> float:
 def _parse_date(date_value: Any, date_fmt: str) -> Optional[str]:
     """
     Parses a date value from Excel into a standardized YYYY-MM-DD string.
-    Handles both string dates and datetime objects.
     """
-    # Common format mapping
     fmt_map = {
         "YYYY-MM-DD": "%Y-%m-%d",
         "DD/MM/YYYY": "%d/%m/%Y",
@@ -152,7 +134,6 @@ def _parse_date(date_value: Any, date_fmt: str) -> Optional[str]:
             dt = datetime.strptime(date_value.strip(), python_fmt)
             return dt.strftime("%Y-%m-%d")
         else:
-            # Try to convert via pandas
             dt = pd.to_datetime(date_value)
             return dt.strftime("%Y-%m-%d")
     except Exception as e:
@@ -165,32 +146,18 @@ def process_audit_file(
     date_fmt: str = "YYYY-MM-DD",
     threshold: float = 5.0,
     api_key: str = "",
-    testing_mode: bool = True  # DEFAULT TRUE to protect API credits
+    testing_mode: bool = True
 ) -> Generator[Dict[str, Any], None, Tuple[pd.DataFrame, Dict[str, Any]]]:
     """
     Processes a user-uploaded Excel/CSV file for audit and reconciliation.
     
     YIELDS progress updates for UI feedback, then RETURNS final results.
-    
-    Args:
-        file: File-like object or path to Excel/CSV file.
-        date_fmt: The date format in the file (e.g., "YYYY-MM-DD", "DD/MM/YYYY").
-        threshold: Variance percentage threshold for PASS/EXCEPTION (default 5%).
-        api_key: Twelve Data API key (required if testing_mode=False).
-        testing_mode: If True, uses mock rates instead of real API calls.
-        
-    Yields:
-        Dict with progress info: {"current": int, "total": int, "message": str, "status": str}
-        
-    Returns:
-        Tuple of (processed_dataframe, summary_dict)
     """
     
     # --- 1. Load File ---
     yield {"current": 0, "total": 0, "message": "Loading file...", "status": "loading"}
     
     try:
-        # Determine file type from file object name or string path
         file_path = ""
         if hasattr(file, 'name'):
             file_path = file.name
@@ -205,14 +172,13 @@ def process_audit_file(
         yield {"current": 0, "total": 0, "message": f"Error loading file: {e}", "status": "error"}
         return pd.DataFrame(), {"total_rows": 0, "exceptions": 0, "passed": 0, "api_errors": 0, "error": str(e)}
     
-    # --- 2. Validate Schema with Flexible Column Mapping ---
+    # --- 2. Validate Schema ---
     is_valid, col_map, error_msg = validate_schema(df)
     
     if not is_valid:
         yield {"current": 0, "total": 0, "message": error_msg, "status": "error"}
         return pd.DataFrame(), {"total_rows": 0, "exceptions": 0, "passed": 0, "api_errors": 0, "error": error_msg}
     
-    # Log the detected schema
     schema_info = ", ".join([f"{k}='{v}'" for k, v in col_map.items()])
     yield {"current": 0, "total": 0, "message": f"Schema validated. Columns: {schema_info}", "status": "loading"}
     
@@ -224,9 +190,9 @@ def process_audit_file(
     df['Variance %'] = None
     df['Status'] = None
     
-    # --- 4. Process Rows with Smart Throttling ---
+    # --- 4. Process Rows ---
     BATCH_SIZE = 5
-    BATCH_SLEEP = 65  # seconds
+    BATCH_SLEEP = 65
     
     passed = 0
     exceptions = 0
@@ -235,7 +201,6 @@ def process_audit_file(
     for idx, row in df.iterrows():
         row_num = idx + 1
         
-        # Parse date using mapped column name
         date_str = _parse_date(row[col_map['date']], date_fmt)
         if not date_str:
             df.at[idx, 'Status'] = 'DATE_ERROR'
@@ -252,13 +217,11 @@ def process_audit_file(
         source = str(row[col_map['source']]).strip().upper()
         user_rate = float(row[col_map['user_rate']])
         
-        # --- Check Cache First ---
         api_rate = _get_cached_rate(date_str, base, source)
         cache_hit = api_rate is not None
         
         if not cache_hit:
             if testing_mode:
-                # Generate mock rate
                 api_rate = _generate_mock_rate(base, source, user_rate)
                 yield {
                     "current": row_num,
@@ -267,8 +230,6 @@ def process_audit_file(
                     "status": "processing"
                 }
             else:
-                # Real API call with throttling
-                # Check if we need to pause for rate limit
                 if row_num > 1 and (row_num - 1) % BATCH_SIZE == 0:
                     yield {
                         "current": row_num,
@@ -298,7 +259,6 @@ def process_audit_file(
                     "status": "processing"
                 }
             
-            # Cache the rate
             _set_cached_rate(date_str, base, source, api_rate)
         else:
             yield {
@@ -308,7 +268,6 @@ def process_audit_file(
                 "status": "processing"
             }
         
-        # --- Calculate Variance ---
         if api_rate and api_rate != 0:
             variance = abs((user_rate - api_rate) / api_rate) * 100
             df.at[idx, 'API Rate'] = round(api_rate, 6)
@@ -321,7 +280,6 @@ def process_audit_file(
                 df.at[idx, 'Status'] = 'EXCEPTION'
                 exceptions += 1
     
-    # --- 5. Final Summary ---
     summary = {
         "total_rows": total_rows,
         "passed": passed,
@@ -347,7 +305,6 @@ def clear_rate_cache():
     logger.info("Rate cache cleared.")
 
 
-# --- Convenience Function for Non-Generator Use ---
 def run_audit(
     file,
     date_fmt: str = "YYYY-MM-DD",
@@ -357,7 +314,6 @@ def run_audit(
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     """
     Runs the audit without yielding progress (for simple scripts).
-    Returns (dataframe, summary).
     """
     gen = process_audit_file(file, date_fmt, threshold, api_key, testing_mode)
     
@@ -365,10 +321,8 @@ def run_audit(
     for update in gen:
         logger.info(update['message'])
         if update['status'] == 'complete':
-            # The generator returns after the final yield
             pass
     
-    # Get the return value
     try:
         result = gen.send(None)
     except StopIteration as e:

@@ -1,9 +1,16 @@
+"""
+Data Processor Module
+
+Handles data processing, including configuration generation and DataFrame creation.
+"""
+
 import pandas as pd
 from typing import List, Dict, Optional, Tuple
 import logging
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
 
 class DataProcessor:
     """
@@ -100,18 +107,11 @@ class DataProcessor:
                 
                 if is_base_exotic and is_target_exotic:
                     # Both exotic (e.g. ZAR -> BWP) -> Cross via USD
-                    api_symbol = f"USD/{user_target}" # Request USD/Target
-                    # We assume USD/Base (USD/ZAR) will be fetched because USD is in TARGET_BASKET
-                    # if user_base was processed as a target for USD? 
-                    # WAIT: The legacy logic assumes if we are processing ZAR, we need USD/ZAR separate?
-                    # Actually, if user requests ZAR, we iterate TARGET_BASKET which includes USD.
-                    # So USD/ZAR (or ZAR/USD) will be generated as a direct pair in the loop.
-                    # BUT, cross calc needs USD/ZAR availability.
-                    # If user_base is ZAR, we get ZAR->USD.
+                    api_symbol = f"USD/{user_target}"
                     
                     pairs_config.append({
                         'api_symbol': api_symbol,
-                        'invert': False, # Not used for cross logic directly but good to have
+                        'invert': False,
                         'user_base': user_base,
                         'user_target': user_target,
                         'calculation_mode': 'cross_via_usd'
@@ -192,14 +192,6 @@ class DataProcessor:
                             
                 elif mode == 'cross_via_usd':
                     # Rate(Base->Target) = (1 / Rate(USD->Base)) * Rate(USD->Target)
-                    # We need USD/Base and USD/Target
-                    
-                    # NOTE: We need to find the correct API symbols for these components.
-                    # The legacy logic constructed them as f"USD/{user_base}" and f"USD/{user_target}".
-                    # This implies USD is always base in the cache for these exotics.
-                    # Since both are exotic (not in standard list), _determine_standard_pair(USD, Exotic)
-                    # should give USD/Exotic because USD in standard list (priority < 999).
-                    
                     usd_base_symbol = f"USD/{user_base}"
                     usd_target_symbol = f"USD/{user_target}"
                     
@@ -207,10 +199,10 @@ class DataProcessor:
                     df_target = rate_cache.get(usd_target_symbol)
                     
                     if df_base is not None and df_target is not None:
-                         merged = pd.merge(df_base, df_target, on='Date', suffixes=('_b', '_t'))
-                         # (1 / USD->Base) * USD->Target
-                         merged['Exchange Rate'] = (1.0 / merged['Exchange Rate_b']) * merged['Exchange Rate_t']
-                         result_df = merged[['Date', 'Exchange Rate']].copy()
+                        merged = pd.merge(df_base, df_target, on='Date', suffixes=('_b', '_t'))
+                        # (1 / USD->Base) * USD->Target
+                        merged['Exchange Rate'] = (1.0 / merged['Exchange Rate_b']) * merged['Exchange Rate_t']
+                        result_df = merged[['Date', 'Exchange Rate']].copy()
 
                 if result_df is not None and not result_df.empty:
                     result_df['Currency Base'] = user_base

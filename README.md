@@ -9,7 +9,7 @@ A Python-based Streamlit application to extract and audit historical foreign exc
 *   **Cross-Rate Calculation**: Automatically calculates cross-rates (e.g., ZAR → BWP) via USD.
 *   **Export Options**: Download results as CSV or Excel.
 
-### 🔍 Audit & Reconciliation (NEW)
+### 🔍 Audit & Reconciliation
 *   **Rate Validation**: Upload your own rates file and compare against official Twelve Data API rates.
 *   **Flexible Schema**: Supports various column naming conventions (Date, Base, Source, Rate).
 *   **Variance Detection**: Marks rates as PASS or EXCEPTION based on configurable threshold.
@@ -22,9 +22,7 @@ A Python-based Streamlit application to extract and audit historical foreign exc
 Forex Rate Extractor/
 ├── code/                          # Streamlit Frontend
 │   ├── app.py                     # Main app (Rate Extraction + Audit tabs)
-│   ├── run_app.sh                 # Shell launcher
-│   ├── requirements.txt           # Frontend dependencies
-│   ├── core/auth.py               # API key authentication
+│   ├── core/auth.py               # API key authentication (cookie-based)
 │   └── ui/styles.css              # Custom CSS styling
 │
 ├── logic/                         # Backend Business Logic
@@ -34,8 +32,9 @@ Forex Rate Extractor/
 │   ├── data_processor.py          # Data transformation
 │   └── utils.py                   # CSV/Excel export helpers
 │
-├── requirements.txt               # Root-level dependencies
-├── dummy_data.csv                 # Sample data for testing audit
+├── Dockerfile                     # Container definition
+├── docker-compose.yml             # Container orchestration
+├── requirements.txt               # Python dependencies
 └── README.md                      # This file
 ```
 
@@ -49,11 +48,15 @@ Forex Rate Extractor/
 
 ## Usage
 
+### Running Locally
 ```bash
 cd code
 streamlit run app.py
-# OR
-./run_app.sh
+```
+
+### Running with Docker
+```bash
+docker-compose up --build
 ```
 
 **Default URL**: `http://localhost:8501`
@@ -70,6 +73,19 @@ streamlit run app.py
 4. Enable "Testing Mode" for initial testing (recommended)
 5. Click "Generate Audit"
 
+## Security
+
+- API keys are stored in **browser cookies** (7-day expiry)
+- No API keys are saved on the server
+- `.env` files are gitignored
+
+## API Rate Limits (Twelve Data Free Tier)
+
+- 8 API calls per minute
+- 800 API calls per day
+
+The application implements smart throttling to respect these limits.
+
 ## Dependencies
 
 ```
@@ -80,10 +96,3 @@ requests
 extra-streamlit-components
 watchdog
 ```
-
-## API Rate Limits (Twelve Data Free Tier)
-
-- 8 API calls per minute
-- 800 API calls per day
-
-The application implements smart throttling to respect these limits.

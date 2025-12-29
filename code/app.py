@@ -1,28 +1,52 @@
 import streamlit as st
 import sys
 import os
-
-# Add parent directory to path to find 'logic' module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from core.auth import get_api_key, set_api_key, get_cookie_manager, clear_api_key
-from logic.auditor import process_audit_file, clear_rate_cache
-from logic.utils import convert_df_to_csv, convert_df_to_excel
 import time
 
+# --- PATH CONFIGURATION ---
+# Add parent directory to path to find 'logic' module
+# This ensures that even if we run from code/, we can import from logic/ (if it exists in parent)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+
+# Try imports - handle potential missing modules gracefully
+try:
+    from core.auth import get_api_key, set_api_key, get_cookie_manager, clear_api_key
+except ImportError:
+    # If core.auth not found, try finding it in logic or define mocks for testing UI only
+    try:
+        from logic.auth import get_api_key, set_api_key, get_cookie_manager, clear_api_key
+    except ImportError:
+         st.error("Authentication modules not found. Application may not Work.")
+
+try:
+    from logic.auditor import process_audit_file, clear_rate_cache
+    from logic.utils import convert_df_to_csv, convert_df_to_excel
+    from logic.facade import get_rates, get_available_currencies
+except ImportError as e:
+    st.error(f"Detailed Import Error: {e}")
+    st.warning("Logic modules not found. Backend functionality will be disabled.")
+
 # Page Config
-st.set_page_config(page_title="FX-Test", page_icon="favicon_clean.png", layout="wide")
+st.set_page_config(page_title="FX-Test", page_icon=os.path.join(current_dir, "favicon_optimized.png"), layout="wide")
 
 # Load Styles
 def load_css(file_name):
-    with open(file_name) as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    # Fix: use absolute path based on current file location
+    # This resolves the FileNotFoundError on Streamlit Cloud
+    file_path = os.path.join(current_dir, file_name)
+    try:
+        with open(file_path) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.error(f"CSS file not found at: {file_path}")
 
 load_css("ui/styles.css")
 
 # --- AUTHENTICATION ---
-# The Mixed-Font Gradient Title
-st.markdown('<h3 class="gradient-title"><span class="title-fx">FX</span><span class="title-hyphen">-</span><span class="title-test">Test</span></h3>', unsafe_allow_html=True)
+# The Mixed-Font Gradient Title (Hyphen Removed)
+st.markdown('<h3 class="gradient-title"><span class="title-fx">FX</span> <span class="title-test">Test</span></h3>', unsafe_allow_html=True)
 
 # Info Button Injection
 st.markdown("""
@@ -31,17 +55,18 @@ st.markdown("""
 </a>
 """, unsafe_allow_html=True)
 
-# Initialize Cookie Manager (Must be at top level)
-cookie_manager = get_cookie_manager()
-
-# Get API key (session state takes priority, then cookies)
-api_key = get_api_key(cookie_manager)
+# Initialize Cookie Manager
+try:
+    cookie_manager = get_cookie_manager()
+    api_key = get_api_key(cookie_manager)
+except NameError:
+    cookie_manager = None
+    api_key = "test_key" # Fallback if auth missing
 
 if not api_key:
     # --- PROMPT FOR KEY ---
     st.markdown('<div class="modal-backdrop"></div>', unsafe_allow_html=True)
     
-    # The Form becomes the Modal via CSS targeting [data-testid="stForm"]
     with st.form("auth_form"):
         st.markdown("""
             <h2>🔐 API Key Required</h2>
@@ -53,7 +78,6 @@ if not api_key:
         
         st.markdown('<p class="auth-disclaimer">Your key will be securely stored in your browser for 7 days.</p>', unsafe_allow_html=True)
         
-        # Use columns to force Right Alignment of the button
         cols = st.columns([1.5, 1])
         with cols[1]:
             submitted = st.form_submit_button("Initialise ➜")
@@ -79,14 +103,115 @@ else:
             st.markdown("### 🛠️ Configuration")
             
             # User Inputs - Currency Pair Row
+            # Define Top Majors for Sticky Sort - ZAR First
+            TOP_CURRENCIES = ['ZAR', 'USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'NZD']
+            
             curr_col1, curr_col2 = st.columns(2)
+            
             with curr_col1:
                 st.markdown("**Base Currencies**")
-                base_currencies_input = st.text_input("Base", value="ZAR", placeholder="e.g. ZAR, USD", label_visibility="collapsed", key="extract_base")
+                # Single Select for Base validation
+                base_options = TOP_CURRENCIES[:]
+                if "ZAR" not in base_options:
+                    base_options.insert(0, "ZAR")
+                    
+                base_currency_selection = st.selectbox(
+                    "Base", 
+                    options=base_options, 
+                    index=base_options.index("ZAR") if "ZAR" in base_options else 0,
+                    label_visibility="collapsed", 
+                    key="extract_base"
+                )
+                
             with curr_col2:
                 st.markdown("**Source Currencies**")
-                source_currencies_input = st.text_input("Source", value="USD", placeholder="e.g. USD, EUR", label_visibility="collapsed", key="extract_source")
-            
+                
+                # Dynamic Fetch Logic
+                available_options = []
+                # Use the selected base currency
+                primary_base = base_currency_selection.strip().upper() if base_currency_selection else "USD"
+                
+                if 'get_available_currencies' in locals() and api_key and primary_base:
+                    try:
+                        all_curr = get_available_currencies(api_key, primary_base)
+                        if all_curr:
+                            # Sticky Top Sort: Majors first, then alphabetical rest
+                            majors = [c for c in TOP_CURRENCIES if c in all_curr]
+                            others = sorted(list(set(all_curr) - set(majors)))
+                            available_options = majors + others
+                    except Exception:
+                        pass # Fallback to empty if fetch fails
+
+                # UI Layout
+                input_container = st.container()
+                
+                # Checkbox for Select All
+                select_all = st.checkbox("Select All Available Currencies", key="sel_all_toggle")
+                
+                selected_sources = []
+                ack_high_volume = st.session_state.get('ack_high_vol', False)
+                
+                # MODAL WARNING LOGIC
+                if select_all:
+                    if not ack_high_volume:
+                        # RENDER MODAL
+                        st.markdown('<div class="modal-backdrop"></div>', unsafe_allow_html=True)
+                        container = st.container()
+                        with container:
+                            with st.form("high_vol_warning"):
+                                st.markdown("""
+                                    <h2 style="color:#d32f2f !important;">⚠️ High Volume Warning</h2>
+                                    <p>You are about to select <b>ALL available currencies</b>.</p>
+                                    <p>This operation will consume a significant amount of your daily API quota and may take several minutes to complete.</p>
+                                    <br>
+                                """, unsafe_allow_html=True)
+                                
+                                c_col1, c_col2 = st.columns(2)
+                                
+                                # Define callback to clear state
+                                def clear_selection():
+                                    st.session_state['sel_all_toggle'] = False
+                                    st.session_state['ack_high_vol'] = False
+                                    
+                                with c_col1:
+                                    proceed = st.form_submit_button("✅ I Understand, Proceed", type="primary")
+                                with c_col2:
+                                    # Use on_click for reliable state update
+                                    cancel = st.form_submit_button("❌ Cancel", on_click=clear_selection)
+                                    
+                                if proceed:
+                                    st.session_state['ack_high_vol'] = True
+                                    st.rerun()
+                                    
+                                if cancel:
+                                    # The callback handles the state reset, rerunning happens automatically after 
+                                    st.rerun()
+                                    
+                        # Stop execution so modal remains focus
+                        st.stop()
+                    else:
+                        # Confirmed state
+                        st.info(f"✅ All {len(available_options)} currencies selected.")
+                        selected_sources = ["[ALL]"]
+                else:
+                    # Reset acknowledgment if unchecked
+                    if ack_high_volume:
+                        st.session_state['ack_high_vol'] = False
+                    
+                    # Standard Multi-Select
+                    if available_options:
+                        selected_sources = input_container.multiselect(
+                            "Select currencies",
+                            options=available_options,
+                            default=["USD"] if "USD" in available_options else [],
+                            label_visibility="collapsed",
+                            placeholder="Select currencies...",
+                            key="source_multiselect"
+                        )
+                    else:
+                        source_text = input_container.text_input("Source", value="USD", placeholder="e.g. USD, EUR", label_visibility="collapsed", key="extract_source_fallback")
+                        selected_sources = [s.strip() for s in source_text.split(',') if s.strip()]
+
             st.markdown("**Date Range**")
             d_col1, d_col2 = st.columns(2)
             with d_col1:
@@ -98,30 +223,38 @@ else:
             
             # Validation for Run
             run_disabled = False
-            if not base_currencies_input or not source_currencies_input:
+            
+            if not base_currency_selection:
                 run_disabled = True
-                
+            
+            if not select_all and not selected_sources:
+                run_disabled = True
+            
+            # If select_all is true, we must have acknowledged (modal handles the blocking otherwise)
+            
             if st.button("Run Extraction", type="primary", disabled=run_disabled, key="extract_run"):
                 with st.spinner("Fetching rates from Twelve Data..."):
                     try:
-                        # Parse currencies
-                        bases = [b.strip() for b in base_currencies_input.split(',') if b.strip()]
-                        sources = [s.strip() for s in source_currencies_input.split(',') if s.strip()]
+                        bases = [base_currency_selection]
                         
-                        # Convert dates to string
+                        if select_all:
+                             sources = available_options 
+                        else:
+                             sources = selected_sources
+                        
                         s_date_str = start_date.strftime("%Y-%m-%d")
                         e_date_str = end_date.strftime("%Y-%m-%d")
                         
-                        # CALL CORE LOGIC
-                        from logic.facade import get_rates
-                        
-                        df = get_rates(api_key, bases, s_date_str, e_date_str)
-                        
-                        if not df.empty:
-                            st.session_state['last_result'] = df
-                            st.success(f"Success! Retrieved {len(df)} records.")
+                        if 'get_rates' in locals():
+                            df = get_rates(api_key, bases, s_date_str, e_date_str, sources)
+                            
+                            if not df.empty:
+                                st.session_state['last_result'] = df
+                                st.success(f"Success! Retrieved {len(df)} records.")
+                            else:
+                                st.warning("No data found for the specified criteria.")
                         else:
-                            st.warning("No data found for the specified criteria.")
+                             st.error("Backend logic missing")
                             
                     except Exception as e:
                         st.error(f"An error occurred: {e}")
@@ -132,7 +265,9 @@ else:
 
         # --- RIGHT PANE (Results) ---
         with col_right:
-            st.markdown("### 📊 Extraction Results")
+            # Shift content up SIGNIFICANTLY to align with top
+            # Increased negative margin to -80px (adjusted per request)
+            st.markdown('<h3 style="margin-top: -80px;">📊 Extraction Results</h3>', unsafe_allow_html=True)
             
             if 'last_result' in st.session_state:
                 res_df = st.session_state['last_result']
@@ -142,32 +277,36 @@ else:
                     res_df, 
                     use_container_width=True, 
                     hide_index=True,
-                    height=400
+                    height=440  # Increased from 400
                 )
                 
                 # Download Buttons
-                st.markdown("#### 📥 Download")
-                dl_cols = st.columns(2)
-                
-                csv = convert_df_to_csv(res_df)
-                excel = convert_df_to_excel(res_df)
-                
-                with dl_cols[0]:
-                    st.download_button(
-                        label="Download CSV",
-                        data=csv,
-                        file_name="forex_rates.csv",
-                        mime="text/csv",
-                        key="dl_csv_extract"
-                    )
-                with dl_cols[1]:
-                    st.download_button(
-                        label="Download Excel",
-                        data=excel,
-                        file_name="forex_rates.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        key="dl_excel_extract"
-                    )
+                if 'convert_df_to_csv' in locals():
+                    # Move down 20px
+                    st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
+                    
+                    # Columns with small gap - using [107, 115, 200] to add 1px equivalent width to CSV
+                    dl_cols = st.columns([107, 115, 200], gap="small")
+                    
+                    csv = convert_df_to_csv(res_df)
+                    excel = convert_df_to_excel(res_df)
+                    
+                    with dl_cols[0]:
+                        st.download_button(
+                            label="Download CSV",
+                            data=csv,
+                            file_name="forex_rates.csv",
+                            mime="text/csv",
+                            key="dl_csv_extract"
+                        )
+                    with dl_cols[1]:
+                        st.download_button(
+                            label="Download Excel",
+                            data=excel,
+                            file_name="forex_rates.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            key="dl_excel_extract"
+                        )
             else:
                 st.markdown('''
                     <div class="results-placeholder">
@@ -242,8 +381,8 @@ else:
             
             # Check if we're processing
             if st.session_state.get('audit_processing', False):
-                # Clear rate cache for fresh start
-                clear_rate_cache()
+                if 'clear_rate_cache' in locals():
+                    clear_rate_cache()
                 
                 # Create progress containers IN THE RIGHT PANE
                 progress_bar = st.progress(0, text="Initializing...")
@@ -253,54 +392,58 @@ else:
                     params = st.session_state['audit_params']
                     file_data = st.session_state['audit_file_data']
                     
-                    # Call the generator
-                    gen = process_audit_file(
-                        file=file_data,
-                        date_fmt=params['date_fmt'],
-                        threshold=params['threshold'],
-                        api_key=api_key,
-                        testing_mode=params['testing_mode']
-                    )
-                    
-                    # Consume generator for progress updates
-                    final_result = None
-                    for update in gen:
-                        current = update.get('current', 0)
-                        total = update.get('total', 1)
-                        message = update.get('message', '')
-                        status = update.get('status', '')
+                    if 'process_audit_file' in locals():
+                        # Call the generator
+                        gen = process_audit_file(
+                            file=file_data,
+                            date_fmt=params['date_fmt'],
+                            threshold=params['threshold'],
+                            api_key=api_key,
+                            testing_mode=params['testing_mode']
+                        )
                         
-                        # Update progress bar
-                        if total > 0:
-                            progress_val = min(current / total, 1.0)
-                            progress_bar.progress(progress_val, text=f"{current}/{total}")
+                        # Consume generator for progress updates
+                        final_result = None
+                        for update in gen:
+                            current = update.get('current', 0)
+                            total = update.get('total', 1)
+                            message = update.get('message', '')
+                            status = update.get('status', '')
+                            
+                            # Update progress bar
+                            if total > 0:
+                                progress_val = min(current / total, 1.0)
+                                progress_bar.progress(progress_val, text=f"{current}/{total}")
+                            
+                            # Update status
+                            if status == 'waiting':
+                                status_text.warning(f"⏳ {message}")
+                            elif status == 'error':
+                                status_text.error(f"❌ {message}")
+                            elif status == 'complete':
+                                status_text.success(f"✅ {message}")
+                            else:
+                                status_text.info(f"📊 {message}")
                         
-                        # Update status
-                        if status == 'waiting':
-                            status_text.warning(f"⏳ {message}")
-                        elif status == 'error':
-                            status_text.error(f"❌ {message}")
-                        elif status == 'complete':
-                            status_text.success(f"✅ {message}")
+                        # Get final result via StopIteration
+                        try:
+                            gen.send(None)
+                        except StopIteration as e:
+                            final_result = e.value
+                        
+                        # Store result and clear processing flag
+                        if final_result:
+                            st.session_state['audit_result'] = final_result
+                            st.session_state['audit_processing'] = False
+                            progress_bar.progress(1.0, text="Complete!")
+                            time.sleep(0.5)  # Brief pause to show completion
+                            st.rerun()
                         else:
-                            status_text.info(f"📊 {message}")
-                    
-                    # Get final result via StopIteration
-                    try:
-                        gen.send(None)
-                    except StopIteration as e:
-                        final_result = e.value
-                    
-                    # Store result and clear processing flag
-                    if final_result:
-                        st.session_state['audit_result'] = final_result
-                        st.session_state['audit_processing'] = False
-                        progress_bar.progress(1.0, text="Complete!")
-                        time.sleep(0.5)  # Brief pause to show completion
-                        st.rerun()
+                            st.session_state['audit_processing'] = False
+                            st.error("Audit completed but no results returned.")
                     else:
                         st.session_state['audit_processing'] = False
-                        st.error("Audit completed but no results returned.")
+                        st.error("Audit logic not found")
                         
                 except Exception as e:
                     st.session_state['audit_processing'] = False
@@ -333,28 +476,29 @@ else:
                     )
                     
                     # Download Buttons
-                    st.markdown("#### 📥 Download Audit Report")
-                    dl_cols = st.columns(2)
-                    
-                    csv = convert_df_to_csv(df)
-                    excel = convert_df_to_excel(df)
-                    
-                    with dl_cols[0]:
-                        st.download_button(
-                            label="Download CSV",
-                            data=csv,
-                            file_name="audit_report.csv",
-                            mime="text/csv",
-                            key="dl_csv_audit"
-                        )
-                    with dl_cols[1]:
-                        st.download_button(
-                            label="Download Excel",
-                            data=excel,
-                            file_name="audit_report.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            key="dl_excel_audit"
-                        )
+                    if 'convert_df_to_csv' in locals():
+                        st.markdown("#### 📥 Download Audit Report")
+                        dl_cols = st.columns(2)
+                        
+                        csv = convert_df_to_csv(df)
+                        excel = convert_df_to_excel(df)
+                        
+                        with dl_cols[0]:
+                            st.download_button(
+                                label="Download CSV",
+                                data=csv,
+                                file_name="audit_report.csv",
+                                mime="text/csv",
+                                key="dl_csv_audit"
+                            )
+                        with dl_cols[1]:
+                            st.download_button(
+                                label="Download Excel",
+                                data=excel,
+                                file_name="audit_report.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                key="dl_excel_audit"
+                            )
                 else:
                     st.warning("No processable data in the uploaded file.")
             else:
@@ -363,4 +507,3 @@ else:
                         <p>Upload a file and click 'Generate Audit' to validate rates.</p>
                     </div>
                 ''', unsafe_allow_html=True)
-

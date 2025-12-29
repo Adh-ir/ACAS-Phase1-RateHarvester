@@ -41,7 +41,9 @@ li {
 /* Gradient Title Container */
 .gradient-title {
   font-size: 3.5rem !important;
-  margin-bottom: 20px;
+  margin-bottom: 0px !important;
+  /* Reduced from 5px */
+  /* Reduced from 20px */
   margin-top: 10px;
   letter-spacing: -1px;
   display: inline-block;
@@ -66,14 +68,6 @@ li {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   padding-left: 5px;
-}
-
-/* "-" Hyphen style */
-.title-hyphen {
-  font-family: 'Kanit', sans-serif !important;
-  font-weight: 900 !important;
-  color: #066F45;
-  opacity: 0.8;
 }
 
 /* Info Button Styling */
@@ -252,17 +246,47 @@ div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {
   text-align: center;
 }
 
-/* Shell Structure */
-section[data-testid="stMain"] .block-container {
+/* Shell Structure - Increased Specificity */
+section[data-testid="stMain"]>.block-container {
   max-width: 1200px !important;
-  padding: 30px 30px 0px 30px !important;
+  padding: 20px 30px 0px 30px !important;
+  /* Reverted to 20px */
   margin-top: 30px !important;
   background: rgba(255, 255, 255, 0.45);
   border: 10px solid #FFFFFF !important;
   border-radius: 35px !important;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   min-height: 70vh !important;
-  padding-bottom: 30px !important;
+  padding-bottom: 80px !important;
+}
+
+/* Reduce space between Title and Tabs */
+div[data-testid="stTabs"] {
+  margin-top: -30px !important;
+  /* Reverted to -30px */
+}
+
+/* Prevent layout shift on date/input interaction */
+div[data-testid="stDateInput"] {
+  min-height: 70px !important;
+  /* Lock the date input height */
+}
+
+/* Specific styling for the Select All Checkbox */
+/* We target the label text specifically */
+div[data-testid="stCheckbox"] p {
+  font-size: 0.85rem !important;
+  color: #555 !important;
+  /* Duller color */
+  opacity: 0.8 !important;
+}
+
+/* Shrink the entire checkbox container */
+div[data-testid="stCheckbox"] {
+  transform: scale(0.9) !important;
+  transform-origin: top left !important;
+  margin-top: -5px !important;
+  opacity: 0.85 !important;
 }
 
 .results-container {
@@ -272,7 +296,99 @@ section[data-testid="stMain"] .block-container {
   height: 60vh;
   overflow-y: auto;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  margin-top: 10px;
+  margin-top: 35px;
+  /* Increased */
+  margin-bottom: 40px;
+  /* Added bottom margin */
+}
+
+.results-placeholder {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
+  padding: 40px 20px;
+  height: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  margin-top: 43px;
+  /* +8px */
+  margin-bottom: 60px;
+  /* +20px */
+}
+
+/* ... existing styles ... */
+
+/* Download Button Styling - AGGRESSIVE OVERRIDE */
+/* Replacing the old scale logic with explicit sizing and colors */
+div[data-testid="stDownloadButton"] button {
+  background: #2a633dd4 !important;
+  background-color: #2a633dd4 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: none !important;
+
+  /* Sizing */
+  font-size: 0.85rem !important;
+  padding: 0.5rem 1rem !important;
+  min-height: unset !important;
+  height: auto !important;
+
+  /* Layout */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  width: 100% !important;
+  margin: 0 !important;
+  border-radius: 8px !important;
+}
+
+div[data-testid="stDownloadButton"] button:hover {
+  background: #1e4a2c !important;
+  background-color: #1e4a2c !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(42, 99, 61, 0.3) !important;
+  color: white !important;
+}
+
+/* Bold Table Headers */
+[data-testid="stDataFrame"] th,
+[data-testid="stDataFrame"] td[role="columnheader"],
+[data-testid="stDataFrame"] div[role="columnheader"] {
+  font-weight: 900 !important;
+  color: #066F45 !important;
+  font-size: 1rem !important;
+  border-bottom: 2px solid #066F45 !important;
+}
+
+/* ... existing styles ... */
+
+/* Download Button Styling - Exact Control */
+.stDownloadButton button {
+  background-color: #2a633dd4 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: none !important;
+
+  /* Sizing - Explicit reduction instead of scale */
+  font-size: 0.85rem !important;
+  padding: 0.5rem 1rem !important;
+  min-height: unset !important;
+  height: auto !important;
+
+  /* Layout */
+  white-space: nowrap !important;
+  width: 100% !important;
+  margin: 0 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease;
+}
+
+.stDownloadButton button:hover {
+  background-color: #1e4a2c !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(42, 99, 61, 0.3) !important;
 }
 
 .results-container::-webkit-scrollbar {
@@ -330,13 +446,17 @@ button[kind="primary"]:hover {
 .results-placeholder {
   background: rgba(255, 255, 255, 0.6);
   border-radius: 20px;
-  padding: 40px 20px;
-  height: 400px;
+  padding: 78px 20px 60px 20px;
+  /* top +30px more */
+  height: 498px;
+  /* +30px total */
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  margin-top: 10px;
+  margin-top: 0px;
+  /* Reduced by 5px more to expand upwards */
+  margin-bottom: 40px;
 }
 
 .results-placeholder p {
@@ -346,6 +466,30 @@ button[kind="primary"]:hover {
   text-align: center;
 }
 
+/* Dropdown Menu Styling */
+/* Target the Popover container and the list items */
+div[data-baseweb="popover"] ul,
+ul[data-baseweb="menu"] {
+  background-color: #ffffff !important;
+  border: 1px solid #066F45 !important;
+}
+
+div[data-baseweb="popover"] li,
+ul[data-baseweb="menu"] li {
+  background-color: #ffffff !important;
+  color: #172E04 !important;
+}
+
+/* Hover/Focused/Selected state for options */
+div[data-baseweb="popover"] li:hover,
+div[data-baseweb="popover"] li[aria-selected="true"],
+ul[data-baseweb="menu"] li:hover,
+ul[data-baseweb="menu"] li[aria-selected="true"] {
+  background-color: #d8eee1 !important;
+  color: #066F45 !important;
+  font-weight: 700 !important;
+}
+
 /* Dataframe Styling */
 [data-testid="stDataFrame"] {
   background: rgba(255, 255, 255, 0.6);
@@ -353,6 +497,29 @@ button[kind="primary"]:hover {
   padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.5);
 }
+
+/* Force White Background on Inputs */
+/* Text Input, Date Input, Selectbox Main Container */
+div[data-baseweb="input"],
+div[data-baseweb="select"]>div,
+div[data-testid="stDateInput"] div[data-baseweb="input"] {
+  background-color: #ffffff !important;
+  border: 1px solid #BFD6A7 !important;
+}
+
+/* Ensure focus states are preserved/visible */
+div[data-baseweb="input"]:focus-within,
+div[data-baseweb="select"]>div:focus-within {
+  border-color: #5ddf79 !important;
+  box-shadow: 0 0 0 1px #5ddf79 !important;
+}
+
+/* Download Button Styling - Shrink by 20% */
+/* Targeting the specific buttons in the download area is hard without a specific class.
+   We'll target all stDownloadButton buttons, assuming these are the primary ones. 
+   If there are others, they will also shrink, which is likely acceptable consistency. */
+
+/* Old button styles removed */
 
 /* File Uploader Styling - Smaller Text */
 [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] {
