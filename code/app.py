@@ -318,7 +318,7 @@ else:
                         res_df, 
                         use_container_width=True, 
                         hide_index=True,
-                        height=400  # Standardized across tabs
+                        height=440  # Increased by 40px as requested
                     )
                 
                 # Download Buttons
@@ -552,7 +552,7 @@ else:
                             df,
                             use_container_width=True,
                             hide_index=True,
-                            height=400  # Standardized with Tab 1
+                            height=440  # Increased by 40px as requested
                         )
                     
                     # Download Buttons
