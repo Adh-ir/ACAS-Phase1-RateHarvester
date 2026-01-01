@@ -24,9 +24,20 @@ try:
     from logic.auditor import process_audit_file, clear_rate_cache
     from logic.utils import convert_df_to_csv, convert_df_to_excel
     from logic.facade import get_rates, get_available_currencies
+    from logic.config import UI_CONFIG
 except ImportError as e:
     st.error(f"Detailed Import Error: {e}")
     st.warning("Logic modules not found. Backend functionality will be disabled.")
+
+# Try to import UI components
+try:
+    from ui.components import render_download_buttons, render_results_placeholder
+    _HAS_COMPONENTS = True
+except ImportError:
+    _HAS_COMPONENTS = False
+
+# Module-level constants (PEP 8 compliance)
+TOP_CURRENCIES = list(UI_CONFIG.TOP_CURRENCIES) if 'UI_CONFIG' in dir() else ['ZAR', 'USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'NZD']
 
 # Page Config
 st.set_page_config(page_title="FX-Test", page_icon=os.path.join(current_dir, "favicon_optimized.png"), layout="wide")
@@ -45,8 +56,8 @@ def load_css(file_name):
 load_css("ui/styles.css")
 
 # --- AUTHENTICATION ---
-# The Mixed-Font Gradient Title (Hyphen Removed)
-st.markdown('<h3 class="gradient-title"><span class="title-fx">FX</span> <span class="title-test">Test</span></h3>', unsafe_allow_html=True)
+# The Mixed-Font Gradient Title (Semantic H1)
+st.markdown('<h1 class="gradient-title"><span class="title-fx">FX</span> <span class="title-test">Test</span></h1>', unsafe_allow_html=True)
 
 # Info Button Injection
 st.markdown("""
@@ -84,7 +95,7 @@ if not api_key:
         
         if submitted and input_key:
             set_api_key(cookie_manager, input_key)
-            st.success("Key Saved! reloading...")
+            st.success("Key Saved! Reloading...")
             time.sleep(1)
             st.rerun()
 
@@ -103,8 +114,7 @@ else:
             st.markdown("### 🛠️ Configuration")
             
             # User Inputs - Currency Pair Row
-            # Define Top Majors for Sticky Sort - ZAR First
-            TOP_CURRENCIES = ['ZAR', 'USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'NZD']
+            # Uses module-level TOP_CURRENCIES (moved for PEP 8 compliance)
             
             curr_col1, curr_col2 = st.columns(2)
             
@@ -120,7 +130,8 @@ else:
                     options=base_options, 
                     index=base_options.index("ZAR") if "ZAR" in base_options else 0,
                     label_visibility="collapsed", 
-                    key="extract_base"
+                    key="extract_base",
+                    help="The currency you want rates quoted against (e.g., 1 USD = X ZAR)"
                 )
                 
             with curr_col2:
@@ -206,7 +217,8 @@ else:
                             default=["USD"] if "USD" in available_options else [],
                             label_visibility="collapsed",
                             placeholder="Select currencies...",
-                            key="source_multiselect"
+                            key="source_multiselect",
+                            help="Select the currencies to retrieve exchange rates for"
                         )
                     else:
                         source_text = input_container.text_input("Source", value="USD", placeholder="e.g. USD, EUR", label_visibility="collapsed", key="extract_source_fallback")
@@ -215,9 +227,9 @@ else:
             st.markdown("**Date Range**")
             d_col1, d_col2 = st.columns(2)
             with d_col1:
-                start_date = st.date_input("Start Date", key="extract_start")
+                start_date = st.date_input("Start Date", key="extract_start", help="Start of historical rate range (YYYY-MM-DD)")
             with d_col2:
-                end_date = st.date_input("End Date", key="extract_end")
+                end_date = st.date_input("End Date", key="extract_end", help="End of historical rate range (YYYY-MM-DD)")
                 
             st.markdown("---")
             
@@ -231,6 +243,10 @@ else:
                 run_disabled = True
             
             # If select_all is true, we must have acknowledged (modal handles the blocking otherwise)
+            
+            # Show disabled state explanation
+            if run_disabled:
+                st.caption("⚠️ Select currencies to enable extraction")
             
             if st.button("Run Extraction", type="primary", disabled=run_disabled, key="extract_run"):
                 with st.spinner("Fetching rates from Twelve Data..."):
@@ -265,9 +281,8 @@ else:
 
         # --- RIGHT PANE (Results) ---
         with col_right:
-            # Shift content up SIGNIFICANTLY to align with top
-            # Increased negative margin to -80px (adjusted per request)
-            st.markdown('<h3 style="margin-top: -80px;">📊 Extraction Results</h3>', unsafe_allow_html=True)
+            # Shift content up using CSS variable for maintenance
+            st.markdown('<h3 style="margin-top: var(--results-header-offset, -80px);">📊 Extraction Results</h3>', unsafe_allow_html=True)
             
             if 'last_result' in st.session_state:
                 res_df = st.session_state['last_result']
@@ -277,16 +292,16 @@ else:
                     res_df, 
                     use_container_width=True, 
                     hide_index=True,
-                    height=440  # Increased from 400
+                    height=400  # Standardized across tabs
                 )
                 
                 # Download Buttons
                 if 'convert_df_to_csv' in locals():
-                    # Move down 20px
-                    st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
+                    # Spacer using CSS class
+                    st.markdown('<div class="spacer-sm"></div>', unsafe_allow_html=True)
                     
-                    # Columns with small gap - using [107, 115, 200] to add 1px equivalent width to CSV
-                    dl_cols = st.columns([107, 115, 200], gap="small")
+                    # Columns with small gap - normalized ratios
+                    dl_cols = st.columns([1, 1.1, 2], gap="small")
                     
                     csv = convert_df_to_csv(res_df)
                     excel = convert_df_to_excel(res_df)
@@ -335,7 +350,8 @@ else:
                 "Date Format in File",
                 options=["YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY", "DD-MM-YYYY"],
                 index=0,
-                key="audit_date_fmt"
+                key="audit_date_fmt",
+                help="Select the date format matching your uploaded file's date column"
             )
             
             # Threshold
@@ -361,6 +377,10 @@ else:
             
             # Generate Audit Button
             audit_disabled = uploaded_file is None
+            
+            # Show disabled state explanation
+            if audit_disabled:
+                st.caption("⚠️ Upload a file to enable audit")
             
             if st.button("Generate Audit", type="primary", disabled=audit_disabled, key="audit_run"):
                 # Clear previous results and mark as processing
@@ -455,7 +475,7 @@ else:
                 # Summary Metrics
                 metric_cols = st.columns(4)
                 with metric_cols[0]:
-                    st.metric("Total Rows", summary.get('total_rows', 0))
+                    st.metric("📊 Total Rows", summary.get('total_rows', 0))
                 with metric_cols[1]:
                     st.metric("✅ Passed", summary.get('passed', 0))
                 with metric_cols[2]:
@@ -472,13 +492,13 @@ else:
                         df,
                         use_container_width=True,
                         hide_index=True,
-                        height=350
+                        height=400  # Standardized with Tab 1
                     )
                     
                     # Download Buttons
                     if 'convert_df_to_csv' in locals():
-                        st.markdown("#### 📥 Download Audit Report")
-                        dl_cols = st.columns(2)
+                        st.markdown("**📥 Download Audit Report**")
+                        dl_cols = st.columns([1, 1.1, 2], gap="small")  # Consistent with Tab 1
                         
                         csv = convert_df_to_csv(df)
                         excel = convert_df_to_excel(df)

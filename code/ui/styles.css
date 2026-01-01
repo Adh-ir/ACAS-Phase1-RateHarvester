@@ -2,14 +2,41 @@
 /* Montserrat (keeping for other elements), Kanit (for FX), Varela Round (for Test) */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Kanit:ital,wght@0,900;1,900&family=Varela+Round&display=swap');
 
-/* Glassmorphism Variables */
+/* Design System Variables */
 :root {
+  /* Glass Effects */
   --glass-bg: rgba(255, 255, 255, 0.25);
   --glass-border: rgba(255, 255, 255, 0.5);
   --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+
+  /* Background */
   --app-bg: #d8eee1;
+  --modal-bg: rgba(245, 252, 240, 0.95);
+
+  /* Text */
   --text-color: #172E04;
   --heading-color: #132403;
+
+  /* Brand Greens */
+  --color-primary: #5ddf79;
+  --color-secondary: #066F45;
+  --color-dark: #062E06;
+  --color-gradient-start: #033622;
+  --color-gradient-end: #21BA1C;
+
+  /* Borders */
+  --border-color: #BFD6A7;
+
+  /* Buttons */
+  --btn-download-bg: rgba(42, 99, 61, 0.83);
+  --btn-download-hover: #1e4a2c;
+
+  /* Alerts */
+  --color-warning: #d32f2f;
+
+  /* Spacing */
+  --spacer-sm: 20px;
+  --results-header-offset: -80px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -54,8 +81,9 @@ li {
   font-family: 'Kanit', sans-serif !important;
   font-weight: 900 !important;
   font-style: italic;
-  background: linear-gradient(135deg, #033622 0%, #066F45 100%);
+  background: linear-gradient(135deg, var(--color-gradient-start) 0%, var(--color-secondary) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   padding-right: 5px;
 }
@@ -64,8 +92,9 @@ li {
 .title-test {
   font-family: 'Varela Round', sans-serif !important;
   font-weight: 400 !important;
-  background: linear-gradient(135deg, #066F45 0%, #21BA1C 100%);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-gradient-end) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   padding-left: 5px;
 }
@@ -273,20 +302,14 @@ div[data-testid="stDateInput"] {
 }
 
 /* Specific styling for the Select All Checkbox */
-/* We target the label text specifically */
 div[data-testid="stCheckbox"] p {
   font-size: 0.85rem !important;
-  color: #555 !important;
-  /* Duller color */
-  opacity: 0.8 !important;
+  color: var(--text-color) !important;
+  opacity: 0.7 !important;
 }
 
-/* Shrink the entire checkbox container */
 div[data-testid="stCheckbox"] {
-  transform: scale(0.9) !important;
-  transform-origin: top left !important;
   margin-top: -5px !important;
-  opacity: 0.85 !important;
 }
 
 .results-container {
@@ -302,39 +325,22 @@ div[data-testid="stCheckbox"] {
   /* Added bottom margin */
 }
 
-.results-placeholder {
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 20px;
-  padding: 40px 20px;
-  height: 440px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  margin-top: 43px;
-  /* +8px */
-  margin-bottom: 60px;
-  /* +20px */
+/* Spacer utility class */
+.spacer-sm {
+  height: var(--spacer-sm);
 }
 
-/* ... existing styles ... */
-
-/* Download Button Styling - AGGRESSIVE OVERRIDE */
-/* Replacing the old scale logic with explicit sizing and colors */
-div[data-testid="stDownloadButton"] button {
-  background: #2a633dd4 !important;
-  background-color: #2a633dd4 !important;
+/* Download Button Styling */
+div[data-testid="stDownloadButton"] button,
+.stDownloadButton button {
+  background-color: var(--btn-download-bg) !important;
   color: white !important;
   border: none !important;
   box-shadow: none !important;
-
-  /* Sizing */
   font-size: 0.85rem !important;
   padding: 0.5rem 1rem !important;
   min-height: unset !important;
   height: auto !important;
-
-  /* Layout */
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -342,11 +348,12 @@ div[data-testid="stDownloadButton"] button {
   width: 100% !important;
   margin: 0 !important;
   border-radius: 8px !important;
+  transition: all 0.2s ease;
 }
 
-div[data-testid="stDownloadButton"] button:hover {
-  background: #1e4a2c !important;
-  background-color: #1e4a2c !important;
+div[data-testid="stDownloadButton"] button:hover,
+.stDownloadButton button:hover {
+  background-color: var(--btn-download-hover) !important;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(42, 99, 61, 0.3) !important;
   color: white !important;
@@ -356,40 +363,13 @@ div[data-testid="stDownloadButton"] button:hover {
 [data-testid="stDataFrame"] th,
 [data-testid="stDataFrame"] td[role="columnheader"],
 [data-testid="stDataFrame"] div[role="columnheader"] {
-  font-weight: 900 !important;
-  color: #066F45 !important;
+  font-weight: 700 !important;
+  color: var(--color-secondary) !important;
   font-size: 1rem !important;
-  border-bottom: 2px solid #066F45 !important;
+  border-bottom: 2px solid var(--color-secondary) !important;
 }
 
-/* ... existing styles ... */
-
-/* Download Button Styling - Exact Control */
-.stDownloadButton button {
-  background-color: #2a633dd4 !important;
-  color: white !important;
-  border: none !important;
-  box-shadow: none !important;
-
-  /* Sizing - Explicit reduction instead of scale */
-  font-size: 0.85rem !important;
-  padding: 0.5rem 1rem !important;
-  min-height: unset !important;
-  height: auto !important;
-
-  /* Layout */
-  white-space: nowrap !important;
-  width: 100% !important;
-  margin: 0 !important;
-  border-radius: 8px !important;
-  transition: all 0.2s ease;
-}
-
-.stDownloadButton button:hover {
-  background-color: #1e4a2c !important;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(42, 99, 61, 0.3) !important;
-}
+/* (Duplicate removed - consolidated above) */
 
 .results-container::-webkit-scrollbar {
   width: 8px;
@@ -410,9 +390,9 @@ div[data-testid="stDownloadButton"] button:hover {
 }
 
 button[kind="secondary"] {
-  background-color: #062E06 !important;
+  background-color: var(--color-dark) !important;
   color: #FFFFFF !important;
-  border: 1px solid #062E06 !important;
+  border: 1px solid var(--color-dark) !important;
   transition: all 0.3s ease;
 }
 
@@ -430,8 +410,8 @@ button[kind="secondary"]:hover {
 }
 
 button[kind="primary"] {
-  background-color: #5ddf79 !important;
-  color: #132403 !important;
+  background-color: var(--color-primary) !important;
+  color: var(--heading-color) !important;
   border: none !important;
   transition: all 0.3s ease;
 }
@@ -514,12 +494,7 @@ div[data-baseweb="select"]>div:focus-within {
   box-shadow: 0 0 0 1px #5ddf79 !important;
 }
 
-/* Download Button Styling - Shrink by 20% */
-/* Targeting the specific buttons in the download area is hard without a specific class.
-   We'll target all stDownloadButton buttons, assuming these are the primary ones. 
-   If there are others, they will also shrink, which is likely acceptable consistency. */
-
-/* Old button styles removed */
+/* End of Download Button Styling */
 
 /* File Uploader Styling - Smaller Text */
 [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] {
