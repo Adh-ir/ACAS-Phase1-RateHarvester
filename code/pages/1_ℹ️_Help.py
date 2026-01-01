@@ -30,21 +30,75 @@ st.set_page_config(
 )
 
 # --- STYLING ---
-# Load global styles using absolute path relative to code/ (as expected by load_css)
-# load_css expects path relative to code/ directory (e.g. "ui/styles.css")
-if 'load_css' in locals():
-    load_css("ui/styles.css")
-
-# Override: Remove shell styling for Help page only
+# Skip global styles that include the shell, apply custom minimal styling for Help page
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Kanit:ital,wght@0,900;1,900&family=Varela+Round&display=swap');
+    
+    /* Remove shell entirely */
     section[data-testid="stMain"]>.block-container {
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
         border-radius: 0 !important;
-        padding-top: 0 !important;
+        padding: 20px 30px !important;
         margin-top: 10px !important;
+        max-width: 1200px !important;
+    }
+    
+    /* Replicate essential text styling from main app */
+    body, .stMarkdown, .stText, p, h1, h2, h3, div, span, label, li {
+        color: #172E04 !important;
+        font-family: 'Montserrat', sans-serif;
+    }
+    
+    /* Gradient Title */
+    .gradient-title {
+        font-size: 3.5rem !important;
+        margin-bottom: 0px !important;
+        margin-top: -10px !important;
+        letter-spacing: -1px;
+        display: inline-block;
+    }
+    
+    .title-fx {
+        font-family: 'Kanit', sans-serif !important;
+        font-weight: 900 !important;
+        font-style: italic;
+        background: linear-gradient(135deg, #033622 0%, #066F45 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        padding-right: 5px;
+    }
+    
+    .title-test {
+        font-family: 'Varela Round', sans-serif !important;
+        font-weight: 400 !important;
+        background: linear-gradient(135deg, #066F45 0%, #21BA1C 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        padding-left: 5px;
+    }
+    
+    /* Hide header and footer */
+    header[data-testid="stHeader"], footer {
+        display: none !important;
+    }
+    
+    /* Hide sidebar */
+    [data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="stSidebarCollapsedControl"] {
+        display: none !important;
+    }
+    
+    /* App background */
+    .stApp {
+        background-color: #d8eee1;
+        background-image:
+            radial-gradient(at 0% 0%, #95dfb1 0, transparent 50%),
+            radial-gradient(at 50% 0%, #bee6b7 0, transparent 50%),
+            radial-gradient(at 100% 0%, #5ddf79 0, transparent 50%);
     }
 </style>
 """, unsafe_allow_html=True)
