@@ -374,30 +374,17 @@ else:
             # create_template_excel imported at top level
             template_bytes = create_template_excel()
             
-            # Inject inline styling for this specific button
-            st.markdown("""
-            <style>
-            .template-dl-btn button {
-                font-size: 0.65rem !important;
-                padding: 3px 10px !important;
-                min-height: unset !important;
-                height: auto !important;
-                width: auto !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            with st.container():
-                st.markdown('<div class="template-dl-btn">', unsafe_allow_html=True)
+            # Use columns to constrain button width (left column ~40% of container)
+            btn_col, _ = st.columns([2, 3])
+            with btn_col:
                 st.download_button(
-                    label="⬇️ Download Example Template",
+                    label="⬇️ Template",
                     data=template_bytes,
                     file_name="fx_audit_template.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     key="dl_template",
                     help="Download a blank Excel file with the required column headers."
                 )
-                st.markdown('</div>', unsafe_allow_html=True)
             
             st.markdown("#### Configuration")
             
@@ -536,12 +523,9 @@ else:
                 if not df.empty:
                     
                     # View Toggle
-                    # View Toggle
-                    is_summary_audit = st.session_state.get('toggle_audit', False)
-                    toggle_label_audit = "Switch to Detailed View" if is_summary_audit else "Switch to Summary View"
                     
                     view_mode_audit = st.toggle(
-                        toggle_label_audit, 
+                        "Summary View", 
                         key="toggle_audit",
                         help="Switch to summary view for statistics"
                     )
