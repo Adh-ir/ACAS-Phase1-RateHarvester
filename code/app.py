@@ -349,23 +349,6 @@ else:
         with col_left:
             st.markdown("### 🔍 Audit Configuration")
             
-            # File Upload
-            uploaded_file = st.file_uploader(
-                "Upload your rates file (Excel/CSV)",
-                type=["xlsx", "xls", "csv"],
-                help="File must contain columns: Date, Base, Source, User Rate (or similar)",
-                key="audit_file"
-            )
-            
-            # Date Format
-            date_format = st.selectbox(
-                "Date Format in File",
-                options=["YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY", "DD-MM-YYYY"],
-                index=0,
-                key="audit_date_fmt",
-                help="Select the date format matching your uploaded file's date column"
-            )
-            
             # Threshold
             st.markdown("""
                 <div style="background-color: rgba(255,255,255,0.4); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 20px;">
