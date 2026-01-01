@@ -35,6 +35,20 @@ st.set_page_config(
 if 'load_css' in locals():
     load_css("ui/styles.css")
 
+# Override: Remove shell styling for Help page only
+st.markdown("""
+<style>
+    section[data-testid="stMain"]>.block-container {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding-top: 0 !important;
+        margin-top: 10px !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # --- HEADER ---
 # Replicate the main app header
 st.markdown('<h1 class="gradient-title"><span class="title-fx">FX</span> <span class="title-test">Test</span> <span style="font-size: 2rem; vertical-align: middle; opacity: 0.7;">| Help & Information</span></h1>', unsafe_allow_html=True)
