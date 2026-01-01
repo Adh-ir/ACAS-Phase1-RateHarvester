@@ -123,6 +123,9 @@ else:
     # CSS to style the radio button like tabs
     st.markdown("""
     <style>
+    div.row-widget.stRadio {
+        margin-top: -35px;
+    }
     div.row-widget.stRadio > div {
         flex-direction: row;
         gap: 20px;
@@ -558,32 +561,17 @@ else:
                 
                 # Results Table
                 if not df.empty:
-                    
-                    # View Toggle (like Rate Extraction tab)
-                    view_mode_audit = st.toggle(
-                        "Summary View", 
-                        key="toggle_audit",
-                        help="Toggle for summary statistics (Passed/Exception/Error counts)"
+                    st.dataframe(
+                        df,
+                        use_container_width=True,
+                        hide_index=True,
+                        height=400  # Match Rate Extraction tab fixed height
                     )
-                    
-                    if view_mode_audit:  # Summary View
-                        # Simple counts by Status
-                        summary_counts = df['Status'].value_counts().reset_index()
-                        summary_counts.columns = ['Status', 'Count']
-                        st.dataframe(summary_counts, use_container_width=True, hide_index=True)
-                        
-                    else:  # Detailed View
-                        st.dataframe(
-                            df,
-                            use_container_width=True,
-                            hide_index=True,
-                            height=400  # Match Rate Extraction tab
-                        )
                     
                     # Download Buttons (always visible)
                     if callable(convert_df_to_csv):
                         st.markdown('<div class="spacer-sm"></div>', unsafe_allow_html=True)
-                        st.markdown("**📥 Download Audit Report**")
+                        
                         dl_cols = st.columns([1, 1.1, 2], gap="small")
                         
                         csv = convert_df_to_csv(df)
