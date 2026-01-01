@@ -289,12 +289,23 @@ else:
                 res_df = st.session_state['last_result']
                 
                 # Fixed height dataframe with internal scroll
-                st.dataframe(
-                    res_df, 
-                    use_container_width=True, 
-                    hide_index=True,
-                    height=400  # Standardized across tabs
-                )
+                
+                # View Toggle
+                view_mode = st.toggle("Switch to Summary View", key="toggle_extraction")
+                
+                if view_mode: # Summary
+                    st.caption("Showing average rates per currency pair.")
+                    summary_df = res_df.groupby(['Currency Base', 'Currency Source'])['Exchange Rate'].mean().reset_index()
+                    summary_df.columns = ['Base', 'Source', 'Average Rate']
+                    st.dataframe(summary_df, use_container_width=True)
+                else: # Detailed
+                    st.caption("Switch to summary view for averages.")
+                    st.dataframe(
+                        res_df, 
+                        use_container_width=True, 
+                        hide_index=True,
+                        height=400  # Standardized across tabs
+                    )
                 
                 # Download Buttons
                 if 'convert_df_to_csv' in locals():
@@ -356,23 +367,25 @@ else:
             )
             
             # Threshold
-            threshold = st.slider(
-                "Variance Threshold (%)",
-                min_value=0.1,
-                max_value=20.0,
-                value=5.0,
-                step=0.5,
-                help="Rates exceeding this variance from API rates will be marked as EXCEPTION",
-                key="audit_threshold"
-            )
+            st.markdown("""
+                <div style="background-color: rgba(255,255,255,0.4); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                    <strong style="color: var(--color-primary);">Upload your rates file (Excel/CSV)</strong>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            uploaded_file = st.file_uploader("Upload your rates file (Excel/CSV)", type=['xlsx', 'xls', 'csv'], label_visibility="collapsed", key="audit_file")
             
-            # Testing Mode
-            testing_mode = st.checkbox(
-                "🧪 Testing Mode (Mock API)",
-                value=True,
-                help="When enabled, uses mock rates instead of real API calls. Recommended for initial testing.",
-                key="audit_test_mode"
-            )
+            st.markdown("#### Configuration")
+            
+            col_d, col_t = st.columns(2)
+            with col_d:
+                date_format = st.text_input("Date Format in File", value="YYYY-MM-DD", help="e.g. DD/MM/YYYY", key="audit_date_fmt")
+            with col_t:
+                threshold = st.slider("Variance Threshold (%)", 0.0, 10.0, 5.0, 0.1, key="audit_threshold")
+
+            invert_rates_audit = st.checkbox("Invert rates (Use 1/API Rate)", key="invert_audit")
+            
+            testing_mode = st.checkbox("🧪 Testing Mode (Mock API)", value=True, help="When enabled, uses mock rates instead of real API calls. Recommended for initial testing.", key="audit_test_mode")
             
             st.markdown("---")
             
@@ -384,21 +397,27 @@ else:
                 st.caption("⚠️ Upload a file to enable audit")
             
             if st.button("Generate Audit", type="primary", disabled=audit_disabled, key="audit_run"):
-                # Clear previous results and mark as processing
-                if 'audit_result' in st.session_state:
-                    del st.session_state['audit_result']
-                st.session_state['audit_processing'] = True
-                st.session_state['audit_file_data'] = uploaded_file
-                st.session_state['audit_params'] = {
-                    'date_fmt': date_format,
-                    'threshold': threshold,
-                    'testing_mode': testing_mode
-                }
-                st.rerun()
+                if not uploaded_file:
+                    st.error("Please upload a file first.")
+                elif not api_key and not testing_mode:
+                    st.error("API Key required for live mode.")
+                else:
+                    # Clear previous results and mark as processing
+                    if 'audit_result' in st.session_state:
+                        del st.session_state['audit_result']
+                    st.session_state['audit_processing'] = True
+                    st.session_state['audit_file_data'] = uploaded_file
+                    st.session_state['audit_params'] = {
+                        'date_fmt': date_format,
+                        'threshold': threshold,
+                        'testing_mode': testing_mode,
+                        'invert_rates': invert_rates_audit
+                    }
+                    st.rerun()
 
         # --- RIGHT PANE (Audit Results / Progress) ---
         with col_right:
-            st.markdown('<h3 style="margin-top: var(--results-header-offset, -80px);">📋 Audit Results</h3>', unsafe_allow_html=True)
+            st.markdown('<h3 style="margin-top: var(--results-header-offset, -70px);">📋 Audit Results</h3>', unsafe_allow_html=True)
             
             # Check if we're processing
             if st.session_state.get('audit_processing', False):
@@ -420,7 +439,8 @@ else:
                             date_fmt=params['date_fmt'],
                             threshold=params['threshold'],
                             api_key=api_key,
-                            testing_mode=params['testing_mode']
+                            testing_mode=params['testing_mode'],
+                            invert_rates=params['invert_rates']
                         )
                         
                         # Consume generator for progress updates
@@ -457,6 +477,7 @@ else:
                             st.session_state['audit_result'] = final_result
                             st.session_state['audit_processing'] = False
                             progress_bar.progress(1.0, text="Complete!")
+                            import time
                             time.sleep(0.5)  # Brief pause to show completion
                             st.rerun()
                         else:
@@ -489,12 +510,24 @@ else:
                 
                 # Results Table
                 if not df.empty:
-                    st.dataframe(
-                        df,
-                        use_container_width=True,
-                        hide_index=True,
-                        height=400  # Standardized with Tab 1
-                    )
+                    
+                    # View Toggle
+                    view_mode_audit = st.toggle("Switch to Summary View", key="toggle_audit")
+                    
+                    if view_mode_audit: # Summary
+                        st.caption("Showing status counts.")
+                        # Simple counts summary
+                        summary_counts = df['Status'].value_counts().reset_index()
+                        summary_counts.columns = ['Status', 'Count']
+                        st.dataframe(summary_counts, use_container_width=True)
+                        
+                    else: # Detailed
+                        st.dataframe(
+                            df,
+                            use_container_width=True,
+                            hide_index=True,
+                            height=400  # Standardized with Tab 1
+                        )
                     
                     # Download Buttons
                     if 'convert_df_to_csv' in locals():
@@ -527,31 +560,26 @@ else:
                 html_table = """
 <div class="results-placeholder">
     <p style="margin-bottom: 15px;">Upload a file and click 'Generate Audit' to validate rates.</p>
-    <div style="width: 100%; max-width: 500px;">
-        <p style="font-size: 0.8rem; font-weight: 700; margin-bottom: 5px; opacity: 0.9;">Expected File Columns:</p>
+    <div style="width: 100%; max-width: 400px;">
+        <p style="font-size: 0.8rem; font-weight: 700; margin-bottom: 5px; opacity: 0.9;">Required Columns:</p>
         <table class="schema-table">
             <thead>
                 <tr>
-                    <th>Column Information</th>
-                    <th>Accepted Header Names (Examples)</th>
+                    <th>Column Name</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><strong>Date</strong></td>
-                    <td>Date, Transaction Date, Trade Date</td>
                 </tr>
                 <tr>
                     <td><strong>Base Currency</strong></td>
-                    <td>Base, Base Currency, From</td>
                 </tr>
                 <tr>
                     <td><strong>Source Currency</strong></td>
-                    <td>Source, Source Currency, To</td>
                 </tr>
                 <tr>
-                    <td><strong>Exchange Rate</strong></td>
-                    <td>User Rate, Rate, Exchange Rate</td>
+                    <td><strong>User Rate</strong></td>
                 </tr>
             </tbody>
         </table>

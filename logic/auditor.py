@@ -34,15 +34,20 @@ COLUMN_MAPPINGS = {
 def validate_schema(df: pd.DataFrame) -> Tuple[bool, Dict[str, str], str]:
     """
     Validates the DataFrame schema and maps columns to standard names.
+    Case-insensitive matching.
     """
     found_mapping = {}
     missing_fields = []
     
+    # Create a map of lower-case column names to actual column names
+    actual_cols_map = {col.lower(): col for col in df.columns}
+    
     for internal_name, possible_names in COLUMN_MAPPINGS.items():
         matched = None
+        # Check against lowered possible names
         for name in possible_names:
-            if name in df.columns:
-                matched = name
+            if name.lower() in actual_cols_map:
+                matched = actual_cols_map[name.lower()]
                 break
         
         if matched:
@@ -51,7 +56,7 @@ def validate_schema(df: pd.DataFrame) -> Tuple[bool, Dict[str, str], str]:
             missing_fields.append(internal_name)
     
     if missing_fields:
-        error_msg = f"Missing required columns. Expected one of each: {', '.join([f'{k}: {COLUMN_MAPPINGS[k]}' for k in missing_fields])}"
+        error_msg = f"Missing required columns. Expected one of each: {', '.join([f'{k} (e.g., {COLUMN_MAPPINGS[k][0]})' for k in missing_fields])}"
         return False, {}, error_msg
     
     return True, found_mapping, ""
@@ -148,7 +153,8 @@ def process_audit_file(
     date_fmt: str = "YYYY-MM-DD",
     threshold: float = 5.0,
     api_key: str = "",
-    testing_mode: bool = True
+    testing_mode: bool = True,
+    invert_rates: bool = False
 ) -> Generator[Dict[str, Any], None, Tuple[pd.DataFrame, Dict[str, Any]]]:
     """
     Processes a user-uploaded Excel/CSV file for audit and reconciliation.
@@ -271,6 +277,9 @@ def process_audit_file(
             }
         
         if api_rate and api_rate != 0:
+            if invert_rates:
+                api_rate = 1 / api_rate
+            
             variance = abs((user_rate - api_rate) / api_rate) * 100
             df.at[idx, 'API Rate'] = round(api_rate, 6)
             df.at[idx, 'Variance %'] = round(variance, 2)

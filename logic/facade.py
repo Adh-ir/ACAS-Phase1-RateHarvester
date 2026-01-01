@@ -8,7 +8,7 @@ from .config import CACHE_CONFIG
 
 # Cache for configured duration
 @st.cache_data(ttl=CACHE_CONFIG.RATE_TTL_SECONDS, show_spinner=False)
-def get_rates(api_key: str, base_currencies: List[str], start_date: str, end_date: str, target_currencies: List[str] = None) -> pd.DataFrame:
+def get_rates(api_key: str, base_currencies: List[str], start_date: str, end_date: str, target_currencies: List[str] = None, invert: bool = False) -> pd.DataFrame:
     """
     Main entry point for fetching Forex rates.
     Handles caching, API interaction, and data processing.
@@ -43,7 +43,12 @@ def get_rates(api_key: str, base_currencies: List[str], start_date: str, end_dat
             })
             
     # 4. Process Data
+    # 4. Process Data
     final_df = DataProcessor.process_results(fetch_results)
+    
+    if invert and not final_df.empty and 'Exchange Rate' in final_df.columns:
+        final_df['Exchange Rate'] = 1 / final_df['Exchange Rate']
+        final_df['Exchange Rate'] = final_df['Exchange Rate'].round(6)
     
     return final_df
 

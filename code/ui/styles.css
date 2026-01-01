@@ -37,7 +37,7 @@
 
   /* Spacing */
   --spacer-sm: 20px;
-  --results-header-offset: -80px;
+  --results-header-offset: -70px;
 }
 
 @media (prefers-color-scheme: dark) {
