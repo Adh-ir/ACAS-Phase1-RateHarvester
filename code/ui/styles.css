@@ -292,8 +292,8 @@ section[data-testid="stMain"]>.block-container {
 
 /* Reduce space between Title and Tabs */
 div[data-testid="stTabs"] {
-  margin-top: -30px !important;
-  /* Reverted to -30px */
+  margin-top: -50px !important;
+  /* Reverted to -30px then increased to -50px */
 }
 
 /* Prevent layout shift on date/input interaction */
@@ -547,6 +547,7 @@ div[data-baseweb="select"]>div:focus-within {
 [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] small {
   font-size: 0.45rem !important;
 }
+
 /* Hide Sidebar Navigation */
 [data-testid="stSidebarNav"] {
   display: none !important;
@@ -555,4 +556,3 @@ div[data-baseweb="select"]>div:focus-within {
 [data-testid="stSidebar"] {
   display: none !important;
 }
-

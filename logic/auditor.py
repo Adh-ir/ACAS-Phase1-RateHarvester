@@ -34,26 +34,27 @@ COLUMN_MAPPINGS = {
 def validate_schema(df: pd.DataFrame) -> Tuple[bool, Dict[str, str], str]:
     """
     Validates the DataFrame schema and maps columns to standard names.
-    Case-insensitive matching.
+    Case-insensitive matching and whitespace ignoring.
     """
     found_mapping = {}
     missing_fields = []
     
-    # Create a map of lower-case column names to actual column names
-    actual_cols_map = {col.lower(): col for col in df.columns}
+    # Normalize columns: lower case and remove ALL whitespace (not just strip)
+    # This handles "Base Currency", "BaseCurrency", " Base Currency " etc.
+    df_cols_norm = {c.lower().replace(" ", ""): c for c in df.columns}
     
-    for internal_name, possible_names in COLUMN_MAPPINGS.items():
-        matched = None
-        # Check against lowered possible names
-        for name in possible_names:
-            if name.lower() in actual_cols_map:
-                matched = actual_cols_map[name.lower()]
-                break
+    for required, variants in COLUMN_MAPPINGS.items():
+        # Normalize variants too
+        variants_norm = [v.lower().replace(" ", "") for v in variants]
+        match = next((col for col in df_cols_norm if col in variants_norm), None)
         
-        if matched:
-            found_mapping[internal_name] = matched
+        if match:
+            # Rename the original column to the standard internal name
+            original_col_name = df_cols_norm[match]
+            df.rename(columns={original_col_name: required}, inplace=True)
+            found_mapping[required] = required  # Track that we have mapped it
         else:
-            missing_fields.append(internal_name)
+            missing_fields.append(required)
     
     if missing_fields:
         error_msg = f"Missing required columns. Expected one of each: {', '.join([f'{k} (e.g., {COLUMN_MAPPINGS[k][0]})' for k in missing_fields])}"

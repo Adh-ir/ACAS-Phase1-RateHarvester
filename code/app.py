@@ -358,6 +358,22 @@ else:
                 key="audit_file"
             )
             
+            # Example Template
+            if 'create_template_excel' not in locals():
+                from logic.utils import create_template_excel
+            
+            template_bytes = create_template_excel()
+            
+            st.download_button(
+                label="⬇️ Download Example Template",
+                data=template_bytes,
+                file_name="fx_audit_template.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="dl_template",
+                help="Download a blank Excel file with the required column headers.",
+                use_container_width=True
+            )
+            
             st.markdown("#### Configuration")
             
             col_d, col_t = st.columns(2)
