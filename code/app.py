@@ -374,17 +374,28 @@ else:
             # create_template_excel imported at top level
             template_bytes = create_template_excel()
             
-            # Use columns to constrain button width (left column ~40% of container)
-            btn_col, _ = st.columns([2, 3])
-            with btn_col:
-                st.download_button(
-                    label="⬇️ Template",
-                    data=template_bytes,
-                    file_name="fx_audit_template.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    key="dl_template",
-                    help="Download a blank Excel file with the required column headers."
-                )
+            # Inject CSS for smaller font/height (targeting download button after file uploader)
+            st.markdown("""
+            <style>
+            /* Target the template download button specifically */
+            div[data-testid="stVerticalBlock"] > div[data-testid="element-container"]:has(+ div[data-testid="element-container"] [data-testid="stMarkdown"]) [data-testid="stDownloadButton"] button,
+            [data-testid="stDownloadButton"][data-testid-key="dl_template"] button {
+                font-size: 0.7rem !important;
+                padding: 4px 12px !important;
+                min-height: unset !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            st.download_button(
+                label="⬇️ Download Example Template",
+                data=template_bytes,
+                file_name="fx_audit_template.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="dl_template",
+                help="Download a blank Excel file with the required column headers.",
+                use_container_width=True
+            )
             
             st.markdown("#### Configuration")
             
