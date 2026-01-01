@@ -568,3 +568,20 @@ div[data-baseweb="select"]>div:focus-within {
 [data-testid="stSidebar"] {
   display: none !important;
 }
+
+/* Success Message / Alert Styling - 10% smaller */
+div[data-testid="stAlert"] {
+  padding: 0.5rem 0.9rem !important;
+  /* Reduced padding for height */
+  font-size: 0.9rem !important;
+  /* Reduced font size */
+}
+
+div[data-testid="stAlert"] p {
+  font-size: 0.9rem !important;
+}
+
+/* Hide Sidebar Toggle Arrow */
+[data-testid="stSidebarCollapsedControl"] {
+  display: none !important;
+}
