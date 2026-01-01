@@ -23,7 +23,7 @@ except ImportError:
 
 try:
     from logic.auditor import process_audit_file, clear_rate_cache
-    from logic.utils import convert_df_to_csv, convert_df_to_excel
+    from logic.utils import convert_df_to_csv, convert_df_to_excel, create_template_excel
     from logic.facade import get_rates, get_available_currencies
     from logic.config import UI_CONFIG
 except ImportError as e:
@@ -359,9 +359,7 @@ else:
             )
             
             # Example Template
-            if 'create_template_excel' not in locals():
-                from logic.utils import create_template_excel
-            
+            # create_template_excel imported at top level
             template_bytes = create_template_excel()
             
             st.download_button(
