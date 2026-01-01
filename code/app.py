@@ -318,7 +318,7 @@ else:
                         res_df, 
                         use_container_width=True, 
                         hide_index=True,
-                        height=440  # Increased by 40px as requested
+                        height=480  # Increased by 80px total
                     )
                 
                 # Download Buttons
@@ -552,7 +552,7 @@ else:
                             df,
                             use_container_width=True,
                             hide_index=True,
-                            height=440  # Increased by 40px as requested
+                            height=480  # Increased by 80px total
                         )
                     
                     # Download Buttons
