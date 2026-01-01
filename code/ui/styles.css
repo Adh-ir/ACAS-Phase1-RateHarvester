@@ -548,6 +548,18 @@ div[data-baseweb="select"]>div:focus-within {
   font-size: 0.45rem !important;
 }
 
+/* Template Download Button - Smaller (approx 30%) */
+/* Distinguish from other download buttons by targeting proximity to file uploader */
+[data-testid="stFileUploader"]~[data-testid="stDownloadButton"] button {
+  font-size: 0.75rem !important;
+  padding: 4px 12px !important;
+  min-height: 0px !important;
+  height: auto !important;
+  width: auto !important;
+  margin-top: -10px !important;
+  /* Pull it closer to uploader */
+}
+
 /* Hide Sidebar Navigation */
 [data-testid="stSidebarNav"] {
   display: none !important;
