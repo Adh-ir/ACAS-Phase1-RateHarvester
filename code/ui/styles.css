@@ -260,6 +260,8 @@ div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {
   font-weight: 700 !important;
   font-size: 1rem !important;
   transition: all 0.3s ease;
+  white-space: nowrap !important;
+  /* Prevent text wrapping */
 }
 
 [data-testid="stForm"] button:hover {
