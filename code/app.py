@@ -293,15 +293,20 @@ else:
                 # Fixed height dataframe with internal scroll
                 
                 # View Toggle
-                view_mode = st.toggle("Switch to Summary View", key="toggle_extraction")
+                is_summary = st.session_state.get('toggle_extraction', False)
+                toggle_label = "Switch to Detailed View" if is_summary else "Switch to Summary View"
+                
+                view_mode = st.toggle(
+                    toggle_label, 
+                    key="toggle_extraction", 
+                    help="Switch to summary view for statistics"
+                )
                 
                 if view_mode: # Summary
-                    st.caption("Showing average rates per currency pair.")
                     summary_df = res_df.groupby(['Currency Base', 'Currency Source'])['Exchange Rate'].mean().reset_index()
                     summary_df.columns = ['Base', 'Source', 'Average Rate']
                     st.dataframe(summary_df, use_container_width=True)
                 else: # Detailed
-                    st.caption("Switch to summary view for averages.")
                     st.dataframe(
                         res_df, 
                         use_container_width=True, 
@@ -509,10 +514,17 @@ else:
                 if not df.empty:
                     
                     # View Toggle
-                    view_mode_audit = st.toggle("Switch to Summary View", key="toggle_audit")
+                    # View Toggle
+                    is_summary_audit = st.session_state.get('toggle_audit', False)
+                    toggle_label_audit = "Switch to Detailed View" if is_summary_audit else "Switch to Summary View"
+                    
+                    view_mode_audit = st.toggle(
+                        toggle_label_audit, 
+                        key="toggle_audit",
+                        help="Switch to summary view for statistics"
+                    )
                     
                     if view_mode_audit: # Summary
-                        st.caption("Showing status counts.")
                         # Simple counts summary
                         summary_counts = df['Status'].value_counts().reset_index()
                         summary_counts.columns = ['Status', 'Count']
