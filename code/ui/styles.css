@@ -292,7 +292,8 @@ section[data-testid="stMain"]>.block-container {
   /* Allow content to determine height */
   min-height: 85vh !important;
   /* Increased to fit more content */
-  padding-bottom: 80px !important;
+  padding-bottom: 200px !important;
+  /* Massive padding to ensure download buttons stay inside */
 }
 
 /* Reduce space between Title and Tabs */

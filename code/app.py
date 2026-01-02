@@ -130,7 +130,7 @@ else:
     
     /* Ensure content stays within shell by adding massive bottom padding */
     section[data-testid="stMain"] > .block-container {
-        padding-bottom: 150px !important;
+        padding-bottom: 200px !important;
     }
     
     /* Pull download buttons closer to table */
