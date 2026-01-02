@@ -31,9 +31,7 @@ def load_css(file_name: str) -> None:
         st.error(f"CSS file not found at: {file_path}")
 
 
-def render_download_buttons(
-    df: pd.DataFrame, prefix: str, convert_to_csv, convert_to_excel
-) -> None:
+def render_download_buttons(df: pd.DataFrame, prefix: str, convert_to_csv, convert_to_excel) -> None:
     """
     Renders CSV and Excel download buttons for a DataFrame.
 

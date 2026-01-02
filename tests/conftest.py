@@ -61,43 +61,59 @@ def mock_api_key():
 @pytest.fixture
 def valid_audit_dataframe():
     import pandas as pd
-    return pd.DataFrame({
-        'Date': ['2024-01-01', '2024-01-02'],
-        'Base Currency': ['USD', 'EUR'],
-        'Source Currency': ['EUR', 'GBP'],
-        'User Rate': [0.92, 0.86]
-    })
+
+    return pd.DataFrame(
+        {
+            "Date": ["2024-01-01", "2024-01-02"],
+            "Base Currency": ["USD", "EUR"],
+            "Source Currency": ["EUR", "GBP"],
+            "User Rate": [0.92, 0.86],
+        }
+    )
 
 
 @pytest.fixture
 def invalid_audit_dataframe():
     import pandas as pd
-    return pd.DataFrame({
-        'Values': [1, 2, 3] # Missing required columns
-    })
+
+    return pd.DataFrame(
+        {
+            "Values": [1, 2, 3]  # Missing required columns
+        }
+    )
+
 
 @pytest.fixture
 def sample_dataframe():
     import pandas as pd
-    return pd.DataFrame({
-        "Currency Base": ["USD", "EUR", "GBP"],
-        "Currency Source": ["ZAR", "USD", "EUR"],
-        "Date": ["2023-01-01", "2023-01-02", "2023-01-03"],
-        "Exchange Rate": [18.5, 1.1, 0.85]
-    })
+
+    return pd.DataFrame(
+        {
+            "Currency Base": ["USD", "EUR", "GBP"],
+            "Currency Source": ["ZAR", "USD", "EUR"],
+            "Date": ["2023-01-01", "2023-01-02", "2023-01-03"],
+            "Exchange Rate": [18.5, 1.1, 0.85],
+        }
+    )
+
 
 @pytest.fixture
 def empty_dataframe():
     import pandas as pd
+
     return pd.DataFrame(columns=["Currency Base", "Currency Source", "Date", "Exchange Rate"])
+
 
 @pytest.fixture
 def dataframe_with_special_chars():
     import pandas as pd
-    return pd.DataFrame({
-        "Currency Base": ["USD"],
-        "Currency Source": ["ZAR"],
-        "Date": ["2023-01-01"],
-        "Exchange Rate": [18.5],
-        "Notes": ["5% markup & fees"]
-    })
+
+    return pd.DataFrame(
+        {
+            "Currency Base": ["USD"],
+            "Currency Source": ["ZAR"],
+            "Date": ["2023-01-01"],
+            "Exchange Rate": [18.5],
+            "Notes": ["5% markup & fees"],
+        }
+    )

@@ -40,30 +40,21 @@ class TwelveDataClient:
         now = time.time()
 
         # Remove timestamps older than the window
-        while (
-            self._request_timestamps
-            and self._request_timestamps[0] <= now - self.RATE_LIMIT_WINDOW
-        ):
+        while self._request_timestamps and self._request_timestamps[0] <= now - self.RATE_LIMIT_WINDOW:
             self._request_timestamps.popleft()
 
         if len(self._request_timestamps) >= self.RATE_LIMIT_REQUESTS:
             # Calculate sleep time: Time until the oldest request expires from the window
             oldest_timestamp = self._request_timestamps[0]
-            sleep_time = (
-                (oldest_timestamp + self.RATE_LIMIT_WINDOW) - now + 0.5
-            )  # Add buffering
+            sleep_time = (oldest_timestamp + self.RATE_LIMIT_WINDOW) - now + 0.5  # Add buffering
 
             if sleep_time > 0:
-                logger.warning(
-                    f"Rate limit reached. Sleeping for {sleep_time:.2f} seconds."
-                )
+                logger.warning(f"Rate limit reached. Sleeping for {sleep_time:.2f} seconds.")
                 time.sleep(sleep_time)
 
         self._request_timestamps.append(time.time())
 
-    def fetch_time_series(
-        self, symbol: str, start_date: str, end_date: str
-    ) -> dict[str, Any] | None:
+    def fetch_time_series(self, symbol: str, start_date: str, end_date: str) -> dict[str, Any] | None:
         """
         Fetches time series data for a specific symbol.
         """
@@ -86,9 +77,7 @@ class TwelveDataClient:
         params = {"apikey": self.api_key, "symbol": symbol}
         return self._make_request(url, params)
 
-    def fetch_historical_rate(
-        self, base: str, quote: str, date: str
-    ) -> float | None:
+    def fetch_historical_rate(self, base: str, quote: str, date: str) -> float | None:
         """
         Fetches a single historical rate for a base/quote pair on a specific date.
         Returns the close price as a float, or None if not found or error.
@@ -113,7 +102,7 @@ class TwelveDataClient:
             except (ValueError, KeyError, IndexError) as e:
                 logger.error(f"Error parsing rate from API response: {e}")
                 return None
-        
+
         return None
 
     def fetch_available_pairs(self, base_currency: str) -> list[str]:
@@ -148,33 +137,27 @@ class TwelveDataClient:
                     elif right == base_upper:
                         targets.add(left)
 
-            return sorted(list(targets))
+            return sorted(targets)
 
         except Exception as e:
             safe_message = self._redact_api_key(str(e))
             logger.error(f"Error fetching forex pairs: {safe_message}")
             return []
 
-    def _make_request(
-        self, url: str, params: dict[str, str], retry_count: int = 0
-    ) -> dict[str, Any] | None:
+    def _make_request(self, url: str, params: dict[str, str], retry_count: int = 0) -> dict[str, Any] | None:
         """
         Helper to make the GET request with 429 handling and rate limit enforcement.
         """
         self._enforce_rate_limit()
 
         try:
-            response = requests.get(
-                url, params=params, timeout=API_CONFIG.REQUEST_TIMEOUT_SECONDS
-            )
+            response = requests.get(url, params=params, timeout=API_CONFIG.REQUEST_TIMEOUT_SECONDS)
 
             if response.status_code == 429:
                 if retry_count < API_CONFIG.MAX_RETRIES:
                     # Exponential backoff: 60s, 120s, etc.
                     wait_time = API_CONFIG.RETRY_BACKOFF_SECONDS * (retry_count + 1)
-                    logger.warning(
-                        f"HTTP 429 received from API. Retrying in {wait_time}s..."
-                    )
+                    logger.warning(f"HTTP 429 received from API. Retrying in {wait_time}s...")
                     time.sleep(wait_time)
                     return self._make_request(url, params, retry_count + 1)
                 else:
@@ -187,9 +170,7 @@ class TwelveDataClient:
             if data.get("code") == 429:
                 if retry_count < API_CONFIG.MAX_RETRIES:
                     wait_time = API_CONFIG.RETRY_BACKOFF_SECONDS * (retry_count + 1)
-                    logger.warning(
-                        f"API Code 429 received. Retrying in {wait_time}s..."
-                    )
+                    logger.warning(f"API Code 429 received. Retrying in {wait_time}s...")
                     time.sleep(wait_time)
                     return self._make_request(url, params, retry_count + 1)
                 else:

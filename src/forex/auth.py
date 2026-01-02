@@ -1,6 +1,4 @@
 import datetime
-import os
-import sys
 
 import extra_streamlit_components as stx
 import streamlit as st

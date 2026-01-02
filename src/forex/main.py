@@ -1,5 +1,4 @@
 import os
-import sys
 import time
 
 import streamlit as st
@@ -10,8 +9,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Imports
 try:
-    from forex.auth import clear_api_key, get_api_key, get_cookie_manager, set_api_key
     from forex.auditor import clear_rate_cache, process_audit_file
+    from forex.auth import clear_api_key, get_api_key, get_cookie_manager, set_api_key
     from forex.config import UI_CONFIG
     from forex.facade import get_available_currencies, get_rates
     from forex.utils import (
@@ -19,6 +18,7 @@ try:
         convert_df_to_excel,
         create_template_excel,
     )
+
     _LOGIC_AVAILABLE = True
 except ImportError as e:
     st.error(f"Detailed Import Error: {e}")
@@ -34,7 +34,11 @@ except ImportError as e:
     _LOGIC_AVAILABLE = False
 
 try:
-    from forex.ui.components import render_download_buttons, render_results_placeholder
+    from forex.ui.components import (  # noqa: F401
+        render_download_buttons,
+        render_results_placeholder,
+    )
+
     _HAS_COMPONENTS = True
 except ImportError:
     _HAS_COMPONENTS = False
@@ -179,12 +183,12 @@ else:
     div.row-widget.stRadio {
         margin-top: -65px !important;
     }
-    
+
     /* Pull download buttons closer to table */
     .audit-download-section {
         margin-top: -15px !important;
     }
-    
+
     div.row-widget.stRadio > div {
         flex-direction: row;
         gap: 20px;
@@ -258,11 +262,7 @@ else:
                 # Dynamic Fetch Logic
                 available_options = []
                 # Use the selected base currency
-                primary_base = (
-                    base_currency_selection.strip().upper()
-                    if base_currency_selection
-                    else "USD"
-                )
+                primary_base = base_currency_selection.strip().upper() if base_currency_selection else "USD"
 
                 if callable(get_available_currencies) and api_key and primary_base:
                     try:
@@ -270,7 +270,7 @@ else:
                         if all_curr:
                             # Sticky Top Sort: Majors first, then alphabetical rest
                             majors = [c for c in TOP_CURRENCIES if c in all_curr]
-                            others = sorted(list(set(all_curr) - set(majors)))
+                            others = sorted(set(all_curr) - set(majors))
                             available_options = majors + others
                     except Exception:
                         pass  # Fallback to empty if fetch fails
@@ -279,9 +279,7 @@ else:
                 input_container = st.container()
 
                 # Checkbox for Select All
-                select_all = st.checkbox(
-                    "Select All Available Currencies", key="sel_all_toggle"
-                )
+                select_all = st.checkbox("Select All Available Currencies", key="sel_all_toggle")
 
                 selected_sources = []
                 ack_high_volume = st.session_state.get("ack_high_vol", False)
@@ -290,9 +288,7 @@ else:
                 if select_all:
                     if not ack_high_volume:
                         # RENDER MODAL
-                        st.markdown(
-                            '<div class="modal-backdrop"></div>', unsafe_allow_html=True
-                        )
+                        st.markdown('<div class="modal-backdrop"></div>', unsafe_allow_html=True)
                         container = st.container()
                         with container:
                             with st.form("high_vol_warning"):
@@ -314,14 +310,10 @@ else:
                                     st.session_state["ack_high_vol"] = False
 
                                 with c_col1:
-                                    proceed = st.form_submit_button(
-                                        "✅ I Understand, Proceed", type="primary"
-                                    )
+                                    proceed = st.form_submit_button("✅ I Understand, Proceed", type="primary")
                                 with c_col2:
                                     # Use on_click for reliable state update
-                                    cancel = st.form_submit_button(
-                                        "❌ Cancel", on_click=clear_selection
-                                    )
+                                    cancel = st.form_submit_button("❌ Cancel", on_click=clear_selection)
 
                                 if proceed:
                                     st.session_state["ack_high_vol"] = True
@@ -361,9 +353,7 @@ else:
                             label_visibility="collapsed",
                             key="extract_source_fallback",
                         )
-                        selected_sources = [
-                            s.strip() for s in source_text.split(",") if s.strip()
-                        ]
+                        selected_sources = [s.strip() for s in source_text.split(",") if s.strip()]
 
             st.markdown("<h4>Date Range</h4>", unsafe_allow_html=True)
             d_col1, d_col2 = st.columns(2)
@@ -380,9 +370,7 @@ else:
                     help="End of historical rate range (exclusive, data goes up to but not including this date)",
                 )
 
-            invert_rates_extraction = st.checkbox(
-                "Invert rates (1/Rate)", key="invert_extraction"
-            )
+            invert_rates_extraction = st.checkbox("Invert rates (1/Rate)", key="invert_extraction")
 
             st.markdown("---")
 
@@ -440,21 +428,11 @@ else:
                     except Exception as e:
                         error_msg = str(e).lower()
                         if "rate limit" in error_msg or "429" in error_msg:
-                            st.error(
-                                "⏱️ API rate limit exceeded. Please wait a minute and try again."
-                            )
-                        elif (
-                            "unauthorized" in error_msg
-                            or "401" in error_msg
-                            or "api key" in error_msg
-                        ):
-                            st.error(
-                                "🔑 API key is invalid or expired. Please check your credentials."
-                            )
+                            st.error("⏱️ API rate limit exceeded. Please wait a minute and try again.")
+                        elif "unauthorized" in error_msg or "401" in error_msg or "api key" in error_msg:
+                            st.error("🔑 API key is invalid or expired. Please check your credentials.")
                         elif "timeout" in error_msg:
-                            st.error(
-                                "⌛ Request timed out. Please try again with a smaller date range."
-                            )
+                            st.error("⌛ Request timed out. Please try again with a smaller date range.")
                         else:
                             st.error(f"An error occurred: {e}")
 
@@ -485,9 +463,7 @@ else:
                 if view_mode:  # Summary
                     # Detailed Statistics
                     summary_df = (
-                        res_df.groupby(["Currency Base", "Currency Source"])[
-                            "Exchange Rate"
-                        ]
+                        res_df.groupby(["Currency Base", "Currency Source"])["Exchange Rate"]
                         .agg(["mean", "std", "min", "max"])
                         .reset_index()
                     )
@@ -503,14 +479,10 @@ else:
                     ]
 
                     # Note: CV must be added AFTER renaming, format as percentage
-                    summary_df["CV"] = (
-                        summary_df["Std Dev"] / summary_df["Mean"] * 100
-                    ).round(2).astype(str) + "%"
+                    summary_df["CV"] = (summary_df["Std Dev"] / summary_df["Mean"] * 100).round(2).astype(str) + "%"
 
                     # Reorder columns for readability
-                    summary_df = summary_df[
-                        ["Base", "Source", "Mean", "Std Dev", "CV", "High", "Low"]
-                    ]
+                    summary_df = summary_df[["Base", "Source", "Mean", "Std Dev", "CV", "High", "Low"]]
 
                     st.dataframe(
                         summary_df,
@@ -620,9 +592,7 @@ else:
                     key="audit_date_fmt",
                 )
             with col_t:
-                threshold = st.slider(
-                    "Variance Threshold (%)", 0.0, 10.0, 5.0, 0.1, key="audit_threshold"
-                )
+                threshold = st.slider("Variance Threshold (%)", 0.0, 10.0, 5.0, 0.1, key="audit_threshold")
 
             # invert_rates_audit = st.checkbox("Invert rates (Use 1/API Rate)", key="invert_audit")
             invert_rates_audit = False  # Hardcoded to False per user request
@@ -722,9 +692,7 @@ else:
                             st.rerun()
                         else:
                             st.session_state["audit_processing"] = False
-                            st.error(
-                                "Audit returned no results. Check your file format."
-                            )
+                            st.error("Audit returned no results. Check your file format.")
 
                     except Exception as e:
                         st.session_state["audit_processing"] = False
@@ -745,9 +713,7 @@ else:
                     st.metric("❌ Errors", summary.get("api_errors", 0))
 
                 if summary.get("testing_mode"):
-                    st.info(
-                        "🧪 Results generated with **mock data** (Testing Mode enabled)"
-                    )
+                    st.info("🧪 Results generated with **mock data** (Testing Mode enabled)")
 
                 # Results Table
                 if not df.empty:
@@ -787,6 +753,4 @@ else:
                                 key="dl_excel_audit",
                             )
             else:
-                st.info(
-                    "Upload a file and click **Generate Audit** to see results here."
-                )
+                st.info("Upload a file and click **Generate Audit** to see results here.")

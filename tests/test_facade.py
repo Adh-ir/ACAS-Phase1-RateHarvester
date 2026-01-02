@@ -23,9 +23,7 @@ class TestGetRates:
         mock_instance = mock_api_client.return_value
 
         # Mock fetch_time_series response
-        mock_instance.fetch_time_series.return_value = {
-            "values": [{"datetime": "2023-01-01", "close": "2.0"}]
-        }
+        mock_instance.fetch_time_series.return_value = {"values": [{"datetime": "2023-01-01", "close": "2.0"}]}
 
         # Input: Base=USD, Source=EUR => Rate should be 2.0
         # If Inverted: Base=EUR, Source=USD => Rate should be 0.5

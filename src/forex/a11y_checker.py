@@ -57,15 +57,11 @@ def calculate_contrast_ratio(color1_hex: str, color2_hex: str) -> float:
 
         return (lighter + 0.05) / (darker + 0.05)
     except Exception as e:
-        logger.error(
-            f"Error calculating contrast for {color1_hex} and {color2_hex}: {e}"
-        )
+        logger.error(f"Error calculating contrast for {color1_hex} and {color2_hex}: {e}")
         return 0.0
 
 
-def check_wcag_compliance(
-    contrast_ratio: float, level: str = "AA", font_size: str = "normal"
-) -> bool:
+def check_wcag_compliance(contrast_ratio: float, level: str = "AA", font_size: str = "normal") -> bool:
     """
     Checks if a contrast ratio meets WCAG requirements.
 

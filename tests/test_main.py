@@ -81,11 +81,10 @@ class TestCrossModuleDependencies:
 
     def test_auditor_uses_config(self):
         """Verify auditor module can access config values."""
-        from forex.auditor import API_CONFIG, AUDIT_CONFIG
+        from forex.config import AUDIT_CONFIG
 
-        # These should not raise ImportError
+        # Auditor should use config values
         assert AUDIT_CONFIG.BATCH_SIZE > 0
-        assert API_CONFIG.BASE_URL.startswith("http")
 
     def test_api_client_uses_config(self):
         """Verify api_client module can access config values."""

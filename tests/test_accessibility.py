@@ -18,7 +18,8 @@ from forex.a11y_checker import (
 # Path to styles.css
 STYLES_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "code",
+    "src",
+    "forex",
     "ui",
     "styles.css",
 )
@@ -68,9 +69,7 @@ def test_color_contrast_compliance(css_variables, bg_var, text_var, min_ratio):
 
     # Skip if we couldn't resolve (e.g., if it was rgba and parser skipped it)
     if not bg_hex.startswith("#") or not text_hex.startswith("#"):
-        pytest.skip(
-            f"Could not resolve colors: {bg_var}={bg_hex}, {text_var}={text_hex}"
-        )
+        pytest.skip(f"Could not resolve colors: {bg_var}={bg_hex}, {text_var}={text_hex}")
 
     ratio = calculate_contrast_ratio(bg_hex, text_hex)
 

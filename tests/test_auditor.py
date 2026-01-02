@@ -138,13 +138,21 @@ class TestClearRateCache:
 
     def test_happy_path_clears_cache(self):
         """Happy path: cache is cleared without error."""
-        from forex.auditor import _rate_cache, clear_rate_cache
+        from forex.auditor import (
+            _get_cached_rate,
+            _set_cached_rate,
+            clear_rate_cache,
+        )
 
-        # This should not raise an error
+        # Set a value first
+        _set_cached_rate("2024-01-01", "TEST", "USD", 99.99)
+
+        # Clear the cache
         clear_rate_cache()
 
-        # Cache should be empty after clearing
-        assert len(_rate_cache) == 0
+        # Verify the value is gone
+        result = _get_cached_rate("2024-01-01", "TEST", "USD")
+        assert result is None
 
 
 class TestRunAudit:
@@ -219,14 +227,13 @@ class TestRunAudit:
         assert result is not None or result is None  # Both are acceptable
 
 
-
 class TestFetchRateWithFallbackMocked:
     """Tests for _fetch_rate_with_fallback using mocked TwelveDataClient."""
 
     def test_happy_path_first_try_succeeds(self, mocker):
         """Happy path: returns rate on first attempt."""
         from forex.auditor import _fetch_rate_with_fallback
-        
+
         # Mock the client
         mock_client = mocker.MagicMock()
         mock_client.fetch_historical_rate.return_value = 18.50
@@ -244,9 +251,7 @@ class TestFetchRateWithFallbackMocked:
         mock_client = mocker.MagicMock()
         mock_client.fetch_historical_rate.side_effect = [None, 18.50]
 
-        result = _fetch_rate_with_fallback(
-            mock_client, "ZAR", "USD", "2024-01-06"
-        )  # A Saturday
+        result = _fetch_rate_with_fallback(mock_client, "ZAR", "USD", "2024-01-06")  # A Saturday
 
         assert result == 18.50
         assert mock_client.fetch_historical_rate.call_count == 2
@@ -254,6 +259,7 @@ class TestFetchRateWithFallbackMocked:
     def test_no_fallback_for_today(self, mocker):
         """Edge case: no fallback applied for today's date."""
         from datetime import datetime
+
         from forex.auditor import _fetch_rate_with_fallback
 
         today = datetime.now().strftime("%Y-%m-%d")

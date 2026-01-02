@@ -7,17 +7,19 @@ and compares them to user-provided rates.
 CRITICAL: Designed to survive strict API Rate Limits (Twelve Data Free Tier = ~8 requests/minute).
 """
 
+import asyncio
 import logging
 import random
-import time
 from collections.abc import Callable, Generator
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Any
 
 import pandas as pd
 
 from .api_client import TwelveDataClient
-from .config import API_CONFIG, AUDIT_CONFIG
+from .cache import get_cache_backend
+from .config import AUDIT_CONFIG
 
 # Configure logger
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -76,34 +78,42 @@ def validate_schema(df: pd.DataFrame) -> tuple[bool, dict[str, str], str]:
             missing_fields.append(required)
 
     if missing_fields:
-        error_msg = f"Missing required columns. Expected one of each: {', '.join([f'{k} (e.g., {COLUMN_MAPPINGS[k][0]})' for k in missing_fields])}"
+        missing_desc = ", ".join(
+            [f"{k} (e.g., {COLUMN_MAPPINGS[k][0]})" for k in missing_fields]
+        )
+        error_msg = f"Missing required columns. Expected one of each: {missing_desc}"
         return False, {}, error_msg
 
     return True, found_mapping, ""
 
 
-# --- Rate Cache (Simple In-Memory) ---
-_rate_cache: dict[tuple[str, str, str], float] = {}
+# --- Rate Cache (using distributed cache backend) ---
+# TTL of 24 hours for audit rates (they don't change frequently)
+AUDIT_RATE_CACHE_TTL = 86400
+
+
+def _create_rate_cache_key(date_str: str, base: str, source: str) -> str:
+    """Create cache key for audit rate lookup."""
+    return f"audit_rate:{date_str}:{base.upper()}:{source.upper()}"
 
 
 def _get_cached_rate(date_str: str, base: str, source: str) -> float | None:
     """Check if rate is already in cache."""
-    key = (date_str, base.upper(), source.upper())
-    return _rate_cache.get(key)
+    cache = get_cache_backend()
+    return cache.get(_create_rate_cache_key(date_str, base, source))
 
 
-def _set_cached_rate(date_str: str, base: str, source: str, rate: float):
+def _set_cached_rate(date_str: str, base: str, source: str, rate: float) -> None:
     """Store rate in cache."""
-    key = (date_str, base.upper(), source.upper())
-    _rate_cache[key] = rate
+    cache = get_cache_backend()
+    cache.set(
+        _create_rate_cache_key(date_str, base, source),
+        rate,
+        ttl_seconds=AUDIT_RATE_CACHE_TTL,
+    )
 
 
-
-
-
-def _fetch_rate_with_fallback(
-    client: TwelveDataClient, base: str, source: str, date_str: str
-) -> float | None:
+def _fetch_rate_with_fallback(client: TwelveDataClient, base: str, source: str, date_str: str) -> float | None:
     """
     Fetches rate with a 3-day lookback fallback for missing data (e.g. weekends).
     IMPORTANT: Lookback is DISABLED for current date (today) to avoid stale data.
@@ -116,9 +126,7 @@ def _fetch_rate_with_fallback(
     # 2. Check if requested date is today - if so, skip lookback
     today_str = datetime.now().strftime("%Y-%m-%d")
     if date_str == today_str:
-        logger.info(
-            f"Requested date is today ({today_str}). Skipping lookback to avoid stale data."
-        )
+        logger.info(f"Requested date is today ({today_str}). Skipping lookback to avoid stale data.")
         return None
 
     # 3. Lookback up to 3 days (only for historical dates)
@@ -266,7 +274,7 @@ def process_audit_file(
 
     # --- 4. Process Rows (use config for rate limiting) ---
     BATCH_SIZE = AUDIT_CONFIG.BATCH_SIZE
-    
+
     # Initialize API Client
     api_client = TwelveDataClient(api_key=api_key) if not testing_mode else None
 
@@ -379,10 +387,10 @@ def process_audit_file(
     return df, summary  # Keep for backward compatibility
 
 
-def clear_rate_cache():
-    """Clears the in-memory rate cache."""
-    global _rate_cache
-    _rate_cache = {}
+def clear_rate_cache() -> None:
+    """Clears the rate cache (works with both in-memory and Redis)."""
+    cache = get_cache_backend()
+    cache.clear()
     logger.info("Rate cache cleared.")
 
 
@@ -401,9 +409,7 @@ def run_audit(
     Encapsulates generator logic for simpler consumption.
     Now supports optional progress_callback to report status strings.
     """
-    gen = process_audit_file(
-        file, date_fmt, threshold, api_key, testing_mode, invert_rates
-    )
+    gen = process_audit_file(file, date_fmt, threshold, api_key, testing_mode, invert_rates)
 
     result = None
 
@@ -426,3 +432,47 @@ def run_audit(
             result = update["result"]
 
     return result if result else (pd.DataFrame(), {})
+
+
+# Thread pool for async operations
+_audit_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="audit_worker")
+
+
+async def run_audit_async(
+    file,
+    date_fmt: str = "YYYY-MM-DD",
+    threshold: float = 5.0,
+    api_key: str = "",
+    testing_mode: bool = True,
+    invert_rates: bool = False,
+    progress_callback: Callable[[str], None] | None = None,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """
+    Async version of run_audit for non-blocking execution.
+
+    Offloads the synchronous audit processing to a thread pool,
+    allowing the UI to remain responsive during large file processing.
+
+    Usage:
+        result = await run_audit_async(file, api_key=key)
+
+    Args:
+        Same as run_audit()
+
+    Returns:
+        tuple[pd.DataFrame, dict]: Audit results and summary statistics
+    """
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        _audit_executor,
+        lambda: run_audit(
+            file,
+            date_fmt,
+            threshold,
+            api_key,
+            testing_mode,
+            invert_rates,
+            progress_callback,
+        ),
+    )
+    return result

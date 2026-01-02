@@ -5,6 +5,7 @@ src/forex/a11y_checker.py
 src/forex/api_client.py
 src/forex/auditor.py
 src/forex/auth.py
+src/forex/cache.py
 src/forex/config.py
 src/forex/data_processor.py
 src/forex/facade.py

@@ -25,9 +25,7 @@ class DataProcessor:
     AFRICAN_BASKET = ["BWP", "MWK", "NAD", "SZL", "LSL", "ZAR", "NGN", "KES", "EGP"]
 
     @staticmethod
-    def parse_targets(
-        input_str: str, base_currency: str = None, api_client=None
-    ) -> list[str]:
+    def parse_targets(input_str: str, base_currency: str = None, api_client=None) -> list[str]:
         """
         Parses user input for target currencies.
 
@@ -65,19 +63,13 @@ class DataProcessor:
                 if all_pairs:
                     return all_pairs
             # Fallback if API call fails
-            logger.warning(
-                "[ALL] requested but no API client provided or API failed. Using defaults."
-            )
+            logger.warning("[ALL] requested but no API client provided or API failed. Using defaults.")
             return DataProcessor.TARGET_BASKET.copy()
 
         # Parse comma-separated input
         currencies = [c.strip().upper() for c in cleaned.split(",")]
         # Filter out empty strings and base currency itself
-        currencies = [
-            c
-            for c in currencies
-            if c and c != (base_currency.upper() if base_currency else "")
-        ]
+        currencies = [c for c in currencies if c and c != (base_currency.upper() if base_currency else "")]
 
         return currencies if currencies else DataProcessor.TARGET_BASKET.copy()
 
@@ -90,9 +82,7 @@ class DataProcessor:
         return [b for b in bases if b]
 
     @classmethod
-    def generate_pairs_config(
-        cls, base_currencies: list[str], target_currencies: list[str] = None
-    ) -> list[dict]:
+    def generate_pairs_config(cls, base_currencies: list[str], target_currencies: list[str] = None) -> list[dict]:
         """
         Generates a list of dictionaries containing pair configuration.
         Preserves the legacy logic for Exotic-Exotic cross rates via USD.
@@ -130,9 +120,7 @@ class DataProcessor:
                     )
                 else:
                     # Standard logic
-                    api_symbol, invert = cls._determine_standard_pair(
-                        user_base, user_target
-                    )
+                    api_symbol, invert = cls._determine_standard_pair(user_base, user_target)
                     pairs_config.append(
                         {
                             "api_symbol": api_symbol,
@@ -146,9 +134,7 @@ class DataProcessor:
         return pairs_config
 
     @classmethod
-    def _determine_standard_pair(
-        cls, currency_a: str, currency_b: str
-    ) -> tuple[str, bool]:
+    def _determine_standard_pair(cls, currency_a: str, currency_b: str) -> tuple[str, bool]:
         """
         Determines the standard API symbol and inversion based on standard priority.
         """
@@ -173,9 +159,7 @@ class DataProcessor:
                 return f"{currency_b}/{currency_a}", True
 
     @classmethod
-    def process_results(
-        cls, fetcher_results: list[dict], start_date: str = None, end_date: str = None
-    ) -> pd.DataFrame:
+    def process_results(cls, fetcher_results: list[dict], start_date: str = None, end_date: str = None) -> pd.DataFrame:
         """
         Processes fetch results into a single clean DataFrame.
         Applies forward fill if dates are provided.
@@ -247,9 +231,7 @@ class DataProcessor:
                     if base_df is not None:
                         result_df = base_df.copy()
                         if config["invert"]:
-                            result_df["Exchange Rate"] = (
-                                1.0 / result_df["Exchange Rate"]
-                            )
+                            result_df["Exchange Rate"] = 1.0 / result_df["Exchange Rate"]
 
                 elif mode == "cross_via_usd":
                     # Rate(Base->Target) = (1 / Rate(USD->Base)) * Rate(USD->Target)
@@ -260,13 +242,9 @@ class DataProcessor:
                     df_target = rate_cache.get(usd_target_symbol)
 
                     if df_base is not None and df_target is not None:
-                        merged = pd.merge(
-                            df_base, df_target, on="Date", suffixes=("_b", "_t")
-                        )
+                        merged = pd.merge(df_base, df_target, on="Date", suffixes=("_b", "_t"))
                         # (1 / USD->Base) * USD->Target
-                        merged["Exchange Rate"] = (
-                            1.0 / merged["Exchange Rate_b"]
-                        ) * merged["Exchange Rate_t"]
+                        merged["Exchange Rate"] = (1.0 / merged["Exchange Rate_b"]) * merged["Exchange Rate_t"]
                         result_df = merged[["Date", "Exchange Rate"]].copy()
 
                 if result_df is not None and not result_df.empty:
@@ -274,17 +252,13 @@ class DataProcessor:
                     result_df["Currency Source"] = user_target
                     all_dfs.append(result_df)
                 else:
-                    logger.warning(
-                        f"Could not calculate rate for {user_base}/{user_target}"
-                    )
+                    logger.warning(f"Could not calculate rate for {user_base}/{user_target}")
 
             except Exception as e:
                 logger.error(f"Error processing {user_base}/{user_target}: {e}")
 
         if not all_dfs:
-            return pd.DataFrame(
-                columns=["Currency Base", "Currency Source", "Date", "Exchange Rate"]
-            )
+            return pd.DataFrame(columns=["Currency Base", "Currency Source", "Date", "Exchange Rate"])
 
         final_df = pd.concat(all_dfs, ignore_index=True)
 
@@ -292,9 +266,7 @@ class DataProcessor:
         final_df["Exchange Rate"] = final_df["Exchange Rate"].round(6)
 
         # Strict Column Ordering
-        final_df = final_df[
-            ["Currency Base", "Currency Source", "Date", "Exchange Rate"]
-        ]
+        final_df = final_df[["Currency Base", "Currency Source", "Date", "Exchange Rate"]]
 
         # Sorting
         final_df.sort_values(
