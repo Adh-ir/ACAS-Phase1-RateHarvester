@@ -123,14 +123,15 @@ else:
     # CSS to style the radio button like tabs
     st.markdown("""
     <style>
-    /* Aggressive Spacing Reduction */
+    /* Aggressive Spacing Reduction - Increased to -95px */
     div.row-widget.stRadio {
-        margin-top: -65px !important;
+        margin-top: -95px !important;
+        margin-bottom: 10px !important;
     }
     
     /* Ensure content stays within shell by adding massive bottom padding */
     section[data-testid="stMain"] > .block-container {
-        padding-bottom: 120px !important;
+        padding-bottom: 200px !important;
     }
     
     div.row-widget.stRadio > div {
@@ -437,17 +438,7 @@ else:
             template_bytes = create_template_excel()
             
             # Inject CSS for smaller font/height (targeting download button after file uploader)
-            st.markdown("""
-            <style>
-            /* Target the template download button specifically */
-            div[data-testid="stVerticalBlock"] > div[data-testid="element-container"]:has(+ div[data-testid="element-container"] [data-testid="stMarkdown"]) [data-testid="stDownloadButton"] button,
-            [data-testid="stDownloadButton"][data-testid-key="dl_template"] button {
-                font-size: 0.7rem !important;
-                padding: 4px 12px !important;
-                min-height: unset !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
+
             
             st.download_button(
                 label="⬇️ Download Example Template",
