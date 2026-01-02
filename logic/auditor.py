@@ -12,7 +12,7 @@ import random
 import logging
 import pandas as pd
 import requests
-from typing import Generator, Dict, Any, Tuple, Optional
+from typing import Generator, Dict, Any, Tuple, Optional, Callable
 from datetime import datetime, timedelta
 
 from .config import API_CONFIG, AUDIT_CONFIG
