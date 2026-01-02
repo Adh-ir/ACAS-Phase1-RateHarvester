@@ -123,14 +123,13 @@ else:
     # CSS to style the radio button like tabs
     st.markdown("""
     <style>
-    /* Spacing Reduction - Header to Tabs */
+    /* Aggressive Spacing Reduction */
     div.row-widget.stRadio {
-        margin-top: -30px !important;
+        margin-top: -65px !important;
     }
     
-    /* Ensure content stays within shell but pull top up */
+    /* Ensure content stays within shell by adding massive bottom padding */
     section[data-testid="stMain"] > .block-container {
-        padding-top: 2rem !important;
         padding-bottom: 120px !important;
     }
     
@@ -348,7 +347,7 @@ else:
         # --- RIGHT PANE (Results) ---
         with col_right:
             # Shift content up using CSS variable for maintenance
-            st.markdown("### 📊 Extraction Results")
+            st.markdown('<h3 style="margin-top: var(--results-header-offset, -80px);">📊 Extraction Results</h3>', unsafe_allow_html=True)
             
             if 'last_result' in st.session_state:
                 res_df = st.session_state['last_result']
@@ -508,7 +507,7 @@ else:
 
         # --- RIGHT PANE (Audit Results) ---
         with col_right:
-            st.markdown("### 📋 Audit Results")
+            st.markdown('<h3 style="margin-top: var(--results-header-offset, -70px);">📋 Audit Results</h3>', unsafe_allow_html=True)
             
             # Check if we're processing (triggered by button click)
             if st.session_state.get('audit_processing', False):
