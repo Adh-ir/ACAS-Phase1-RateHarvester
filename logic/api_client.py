@@ -114,7 +114,8 @@ class TwelveDataClient:
             return sorted(list(targets))
             
         except Exception as e:
-            logger.error(f"Error fetching forex pairs: {e}")
+            safe_message = self._redact_api_key(str(e))
+            logger.error(f"Error fetching forex pairs: {safe_message}")
             return []
 
     def _make_request(self, url: str, params: Dict[str, str], retry_count: int = 0) -> Optional[Dict[str, Any]]:
@@ -156,5 +157,15 @@ class TwelveDataClient:
             return data
 
         except requests.RequestException as e:
-            logger.error(f"Network error: {e}")
+            # Redact API key from error message if it helps explain the details of the error without leaking secrets
+            safe_message = self._redact_api_key(str(e))
+            logger.error(f"Network error: {safe_message}")
             return None
+
+    def _redact_api_key(self, text: str) -> str:
+        """
+        Removes the API key from a string if present.
+        """
+        if self.api_key and self.api_key in text:
+            return text.replace(self.api_key, "[REDACTED]")
+        return text
