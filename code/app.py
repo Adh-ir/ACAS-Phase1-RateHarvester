@@ -121,47 +121,7 @@ else:
         st.session_state['nav_radio'] = "📊 Rate Extraction"
         
     # CSS to style the radio button like tabs
-    st.markdown("""
-    <style>
-    /* Aggressive Spacing Reduction - Using Position Relative to prevent layout shift */
-    div.row-widget.stRadio {
-        position: relative !important;
-        top: -110px !important;
-        margin-top: 0px !important;
-        margin-bottom: -90px !important;
-        background-color: transparent !important;
-        z-index: 100 !important;
-    }
-    
-    /* Ensure content stays within shell by adding massive bottom padding */
-    section[data-testid="stMain"] > .block-container {
-        padding-bottom: 200px !important;
-    }
-    
-    div.row-widget.stRadio > div {
-        flex-direction: row;
-        gap: 20px;
-        border-bottom: 2px solid #f0f2f6;
-        padding-bottom: 10px;
-        margin-bottom: 20px;
-    }
-    div.row-widget.stRadio > div > label {
-        background-color: transparent;
-        border: 1px solid transparent;
-        border-radius: 5px;
-        padding: 5px 15px;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-    div.row-widget.stRadio > div > label:hover {
-        background-color: #f0f2f6;
-    }
-    div.row-widget.stRadio > div > label[data-testid="stMarkdownContainer"] > p {
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+
     
     selected_tab = st.radio(
         "Navigation", 
