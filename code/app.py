@@ -125,11 +125,12 @@ else:
     <style>
     /* Spacing Reduction - Header to Tabs */
     div.row-widget.stRadio {
-        margin-top: -80px !important;
+        margin-top: -30px !important;
     }
     
-    /* Ensure content stays within shell */
+    /* Ensure content stays within shell but pull top up */
     section[data-testid="stMain"] > .block-container {
+        padding-top: 2rem !important;
         padding-bottom: 120px !important;
     }
     
@@ -174,7 +175,7 @@ else:
         
         # --- LEFT PANE (Inputs) ---
         with col_left:
-            st.markdown('<h3 style="margin-top: -70px;">🛠️ Configuration</h3>', unsafe_allow_html=True)
+            st.markdown("### 🛠️ Configuration")
             
             # User Inputs - Currency Pair Row
             # Uses module-level TOP_CURRENCIES (moved for PEP 8 compliance)
@@ -347,7 +348,7 @@ else:
         # --- RIGHT PANE (Results) ---
         with col_right:
             # Shift content up using CSS variable for maintenance
-            st.markdown('<h3 style="margin-top: var(--results-header-offset, -80px);">📊 Extraction Results</h3>', unsafe_allow_html=True)
+            st.markdown("### 📊 Extraction Results")
             
             if 'last_result' in st.session_state:
                 res_df = st.session_state['last_result']
@@ -423,7 +424,7 @@ else:
         
         # --- LEFT PANE (Audit Inputs) ---
         with col_left:
-            st.markdown('<h3 style="margin-top: -70px;">🔍 Audit Configuration</h3>', unsafe_allow_html=True)
+            st.markdown("### 🔍 Audit Configuration")
             
             # File Upload
             uploaded_file = st.file_uploader(
@@ -507,7 +508,7 @@ else:
 
         # --- RIGHT PANE (Audit Results) ---
         with col_right:
-            st.markdown('<h3 style="margin-top: var(--results-header-offset, -70px);">📋 Audit Results</h3>', unsafe_allow_html=True)
+            st.markdown("### 📋 Audit Results")
             
             # Check if we're processing (triggered by button click)
             if st.session_state.get('audit_processing', False):
