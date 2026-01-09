@@ -83,7 +83,7 @@ Expected response: `{"status": "ok"}`
 ## 6. Contact Information
 
 - **Twelve Data Support**: https://twelvedata.com/contact
-- **GitHub Issues**: https://github.com/[your-repo]/issues
+- **GitHub Issues**: https://github.com/Adh-ir/FXtest/issues
 
 ---
 

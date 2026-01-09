@@ -6,8 +6,8 @@ Thank you for your interest in improving the Forex Rate Extractor! This document
 
 1.  **Clone the repository**:
     ```bash
-    git clone <repository-url>
-    cd Forex\ Rate\ Extractor
+    git clone https://github.com/Adh-ir/FXtest.git
+    cd FXtest
     ```
 
 2.  **Create a virtual environment**:

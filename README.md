@@ -1,6 +1,10 @@
 # Forex Rate Extractor
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://fxtest.streamlit.app)
+
 A Python-based Streamlit application to extract and audit historical foreign exchange rates using the Twelve Data API.
+
+🌐 **Live App**: [fxtest.streamlit.app](https://fxtest.streamlit.app)
 
 ## Features
 
@@ -16,20 +20,49 @@ A Python-based Streamlit application to extract and audit historical foreign exc
 *   **Testing Mode**: Use mock data to test without consuming API credits.
 *   **Smart Rate Limiting**: Respects Twelve Data's free tier limits (8 req/min).
 
+## Quick Start
+
+### Access via Streamlit Cloud (Recommended)
+Visit [fxtest.streamlit.app](https://fxtest.streamlit.app) — no installation required!
+
+### Running Locally
+```bash
+# Clone the repository
+git clone https://github.com/Adh-ir/FXtest.git
+cd FXtest
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the app
+streamlit run src/forex/main.py
+```
+
+### Running with Docker
+```bash
+docker-compose up --build
+```
+**Default URL**: `http://localhost:8501`
+
 ## Project Structure
 
 ```
-Forex Rate Extractor/
+FXtest/
 ├── src/forex/                     # Main Python Package
-│   ├── main.py                    # Orchestrator (Auth, Nav, Page Config)
+│   ├── main.py                    # App entry point (Auth, Nav, Page Config)
 │   ├── facade.py                  # High-level API for rate fetching
 │   ├── auditor.py                 # Audit & reconciliation module
 │   ├── api_client.py              # Twelve Data API client with rate limiting
-│   ├── data_processor.py          # Data transformation and cross-rate calculation
+│   ├── data_processor.py          # Data transformation & cross-rate calculation
 │   ├── cache.py                   # Cache abstraction (In-memory/Redis)
 │   ├── config.py                  # Centralized configuration
 │   ├── auth.py                    # API key authentication (cookie-based)
 │   ├── utils.py                   # CSV/Excel export helpers
+│   ├── a11y_checker.py            # Accessibility validation
 │   ├── ui/                        # UI Layer
 │   │   ├── tabs/                  # Tab modules
 │   │   │   ├── extraction.py      # Rate Extraction tab
@@ -40,12 +73,24 @@ Forex Rate Extractor/
 │
 ├── tests/                         # Test Suite
 │   ├── conftest.py                # Pytest fixtures and configuration
-│   └── test_*.py                  # Unit and integration tests
+│   ├── test_api_client.py         # API client tests
+│   ├── test_auditor.py            # Auditor module tests
+│   ├── test_data_processor.py     # Data processor tests
+│   ├── test_facade.py             # Facade tests
+│   ├── test_main.py               # Main app tests
+│   ├── test_utils.py              # Utility function tests
+│   ├── test_accessibility.py      # Accessibility tests
+│   ├── test_enhancements.py       # Enhancement tests
+│   └── test_redis_integration.py  # Redis integration tests
 │
+├── .github/workflows/             # CI/CD Pipeline
 ├── Dockerfile                     # Container definition
 ├── docker-compose.yml             # Container orchestration (app + Redis)
 ├── pyproject.toml                 # Project configuration
 ├── requirements.txt               # Python dependencies
+├── requirements-test.txt          # Test dependencies
+├── CONTRIBUTING.md                # Contribution guidelines
+├── RUNBOOK.md                     # Disaster recovery runbook
 └── README.md                      # This file
 ```
 
@@ -53,17 +98,17 @@ Forex Rate Extractor/
 
 ```mermaid
 graph TD
-    User([User]) <--> UI[Streamlit UI (src/forex/main.py)]
-    UI --> Facade[Logic Facade (src/forex/facade.py)]
+    User([User]) <--> UI[Streamlit UI<br>src/forex/main.py]
+    UI --> Facade[Logic Facade<br>src/forex/facade.py]
     
     subgraph "Business Logic Layer"
         Facade --> Auditor[Auditor Module]
-        Facade --> Client[API Client (src/forex/api_client.py)]
+        Facade --> Client[API Client<br>src/forex/api_client.py]
         Auditor --> Client
     end
     
     subgraph "Infrastructure"
-        Facade --> Cache[Cache (Redis/Memory)]
+        Facade --> Cache[Cache<br>Redis/Memory]
         Client --> Config[Centralized Config]
     end
     
@@ -73,29 +118,7 @@ graph TD
     class UI,Facade,Auditor,Client,Cache component;
 ```
 
-
-## Setup
-
-1.  **Get an API Key**: Sign up at [Twelve Data](https://twelvedata.com/) (Free tier available).
-2.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
 ## Usage
-
-### Running Locally
-```bash
-cd code
-streamlit run app.py
-```
-
-### Running with Docker
-```bash
-docker-compose up --build
-```
-
-**Default URL**: `http://localhost:8501`
 
 ### Rate Extraction
 1. Enter base and source currencies (e.g., ZAR, USD)
@@ -109,11 +132,26 @@ docker-compose up --build
 4. Enable "Testing Mode" for initial testing (recommended)
 5. Click "Generate Audit"
 
+## Configuration
+
+### API Key Setup
+1. Sign up at [Twelve Data](https://twelvedata.com/) (Free tier available)
+2. Copy your API key
+3. Enter the key in the application's authentication dialog
+
+### Environment Variables (Optional)
+Create a `.env` file for local development:
+```bash
+TWELVEDATA_API_KEY=your_api_key_here
+REDIS_URL=redis://localhost:6379  # Optional: for Redis caching
+```
+
 ## Security
 
 - API keys are stored in **browser cookies** (7-day expiry)
 - No API keys are saved on the server
 - `.env` files are gitignored
+- HTTPS enforced on Streamlit Cloud
 
 ## API Rate Limits (Twelve Data Free Tier)
 
@@ -122,13 +160,38 @@ docker-compose up --build
 
 The application implements smart throttling to respect these limits.
 
+## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and coding standards.
+
+### Running Tests
+```bash
+# Full test suite
+pytest
+
+# With coverage
+pytest --cov=forex tests/
+
+# Skip integration tests
+pytest -m "not integration"
+```
+
 ## Dependencies
 
-```
-streamlit
-pandas
-openpyxl
-requests
-extra-streamlit-components
-watchdog
-```
+| Package | Purpose |
+|---------|---------|
+| streamlit | Web application framework |
+| pandas | Data manipulation |
+| openpyxl | Excel file support |
+| requests | HTTP client |
+| extra-streamlit-components | Cookie management |
+| watchdog | File system monitoring |
+
+## License
+
+This project is for internal use only. See LICENSE for details.
+
+---
+
+**Repository**: [github.com/Adh-ir/FXtest](https://github.com/Adh-ir/FXtest)  
+**Live App**: [fxtest.streamlit.app](https://fxtest.streamlit.app)
