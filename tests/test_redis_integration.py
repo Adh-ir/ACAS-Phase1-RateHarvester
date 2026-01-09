@@ -8,24 +8,33 @@ Run with: pytest tests/test_redis_integration.py -v
 Requires: Docker running locally
 """
 
+import os
 import time
 
 import pytest
 
+# Check if running in CI environment (GitHub Actions, etc.)
+IS_CI = os.environ.get("CI", "false").lower() == "true"
+
 # Check if Docker is available before running tests
-try:
-    import docker
+DOCKER_AVAILABLE = False
+if not IS_CI:
+    try:
+        import docker
 
-    client = docker.from_env()
-    client.ping()
-    DOCKER_AVAILABLE = True
-except Exception:
-    DOCKER_AVAILABLE = False
+        client = docker.from_env()
+        client.ping()
+        DOCKER_AVAILABLE = True
+    except Exception:
+        pass
 
-# Skip all tests in this module if Docker is not running
+# Skip all tests in this module if Docker is not running or in CI
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skipif(not DOCKER_AVAILABLE, reason="Docker is not running or not available"),
+    pytest.mark.skipif(
+        not DOCKER_AVAILABLE or IS_CI,
+        reason="Docker is not running or not available (skipped in CI)",
+    ),
 ]
 
 
