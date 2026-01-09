@@ -8,6 +8,7 @@ NOTE: This module is framework-agnostic. Caching uses a pluggable backend
 (Redis or in-memory) for horizontal scaling support. The cache backend is
 auto-detected: Redis if available, otherwise in-memory fallback.
 """
+from typing import Any
 
 import pandas as pd
 
@@ -56,10 +57,10 @@ def _fetch_rates_internal(
     pairs_config = DataProcessor.generate_pairs_config(base_currencies, target_currencies)
 
     # 3. Fetch Data
-    fetch_results = []
+    fetch_results: list[dict[str, Any]] = []
 
     for config in pairs_config:
-        api_symbol = config["api_symbol"]
+        api_symbol = str(config["api_symbol"])
         data = client.fetch_time_series(api_symbol, start_date, end_date)
 
         if data:
@@ -149,7 +150,7 @@ def get_available_currencies(api_key: str, base_currency: str) -> list[str]:
     # Check cache
     cached_data = cache.get(cache_key)
     if cached_data is not None:
-        return cached_data
+        return list(cached_data)
 
     # Fetch fresh data
     client = TwelveDataClient(api_key)

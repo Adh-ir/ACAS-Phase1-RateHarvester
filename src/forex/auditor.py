@@ -187,14 +187,14 @@ def _parse_date(date_value: Any, date_fmt: str) -> str | None:
         else:
             # Excel datetime objects, etc.
             dt = pd.to_datetime(date_value, dayfirst=dayfirst)
-            return dt.strftime("%Y-%m-%d")
+            return str(dt.strftime("%Y-%m-%d"))
     except Exception as e:
         logger.warning(f"Date parse error for '{date_value}': {e}")
         return None
 
 
 def process_audit_file(
-    file,
+    file: Any,
     date_fmt: str = "YYYY-MM-DD",
     threshold: float = 5.0,
     api_key: str = "",
@@ -281,7 +281,7 @@ def process_audit_file(
     api_errors = 0
 
     for idx, row in df.iterrows():
-        row_num = idx + 1
+        row_num = int(idx) + 1
 
         date_str = _parse_date(row[col_map["date"]], date_fmt)
         if not date_str:
@@ -394,7 +394,7 @@ def clear_rate_cache() -> None:
 
 
 def run_audit(
-    file,
+    file: Any,
     date_fmt: str = "YYYY-MM-DD",
     threshold: float = 5.0,
     api_key: str = "",
@@ -430,7 +430,7 @@ def run_audit(
         if update.get("status") == "complete" and "result" in update:
             result = update["result"]
 
-    return result if result else (pd.DataFrame(), {})
+    return result if result else (pd.DataFrame(), {})  # type: ignore[return-value]
 
 
 # Thread pool for async operations
@@ -438,7 +438,7 @@ _audit_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="audit_wo
 
 
 async def run_audit_async(
-    file,
+    file: Any,
     date_fmt: str = "YYYY-MM-DD",
     threshold: float = 5.0,
     api_key: str = "",

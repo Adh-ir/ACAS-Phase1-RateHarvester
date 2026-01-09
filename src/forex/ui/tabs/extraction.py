@@ -177,7 +177,7 @@ def render_tab(api_key: str, cookie_manager) -> None:
             )
 
 
-def _render_high_volume_warning(available_options: list) -> None:
+def _render_high_volume_warning(available_options: list[str]) -> None:
     """Render the high volume warning modal."""
     st.markdown('<div class="modal-backdrop"></div>', unsafe_allow_html=True)
     container = st.container()
@@ -217,8 +217,8 @@ def _render_high_volume_warning(available_options: list) -> None:
 def _run_extraction(
     api_key: str,
     base_currency: str,
-    selected_sources: list,
-    available_options: list,
+    selected_sources: list[str],
+    available_options: list[str],
     select_all: bool,
     start_date,
     end_date,

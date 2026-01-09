@@ -42,7 +42,7 @@ class CacheConfig:
 class UIConfig:
     """Configuration for UI constants."""
 
-    TOP_CURRENCIES: tuple = (
+    TOP_CURRENCIES: tuple[str, ...] = (
         "ZAR",
         "USD",
         "EUR",

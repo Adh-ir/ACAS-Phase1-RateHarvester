@@ -6,6 +6,7 @@ Handles data processing, including configuration generation and DataFrame creati
 
 import logging
 from datetime import datetime
+from typing import Any
 
 import pandas as pd
 
@@ -25,7 +26,7 @@ class DataProcessor:
     AFRICAN_BASKET = ["BWP", "MWK", "NAD", "SZL", "LSL", "ZAR", "NGN", "KES", "EGP"]
 
     @staticmethod
-    def parse_targets(input_str: str, base_currency: str | None = None, api_client: object | None = None) -> list[str]:
+    def parse_targets(input_str: str, base_currency: str | None = None, api_client: Any = None) -> list[str]:
         """
         Parses user input for target currencies.
 
@@ -84,7 +85,7 @@ class DataProcessor:
     @classmethod
     def generate_pairs_config(
         cls, base_currencies: list[str], target_currencies: list[str] | None = None
-    ) -> list[dict[str, object]]:
+    ) -> list[dict[str, Any]]:
         """
         Generates a list of dictionaries containing pair configuration.
         Preserves the legacy logic for Exotic-Exotic cross rates via USD.
@@ -162,7 +163,7 @@ class DataProcessor:
 
     @classmethod
     def process_results(
-        cls, fetcher_results: list[dict[str, object]], start_date: str | None = None, end_date: str | None = None
+        cls, fetcher_results: list[dict[str, Any]], start_date: str | None = None, end_date: str | None = None
     ) -> pd.DataFrame:
         """
         Processes fetch results into a single clean DataFrame.
@@ -282,7 +283,7 @@ class DataProcessor:
         return final_df
 
     @classmethod
-    def _parse_api_response(cls, api_data: dict[str, object]) -> pd.DataFrame | None:
+    def _parse_api_response(cls, api_data: dict[str, Any]) -> pd.DataFrame | None:
         """
         Parses API response into a standardized DataFrame.
         """
