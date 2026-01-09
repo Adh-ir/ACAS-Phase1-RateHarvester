@@ -1,4 +1,5 @@
 import pytest
+
 from forex.a11y_checker import (
     calculate_contrast_ratio,
     check_wcag_compliance,

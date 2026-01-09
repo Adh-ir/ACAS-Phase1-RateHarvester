@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+
 from forex.facade import get_rates
 
 

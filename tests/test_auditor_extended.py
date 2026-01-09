@@ -2,6 +2,7 @@ from datetime import datetime
 from unittest.mock import MagicMock
 
 import pandas as pd
+
 from forex.auditor import _fetch_rate_with_fallback, _parse_date
 
 
