@@ -431,7 +431,8 @@ def run_audit(
             result = update["result"]
 
     if result is not None:
-        return result
+        df, summary = result
+        return df, summary
     return pd.DataFrame(), {}
 
 
